@@ -1,98 +1,45 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { AuraLogo } from '@/components/AuraLogo';
+import { PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
+import { Screen } from '@/components/ui/Screen';
+import { colors, spacing, typography } from '@/theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+export default function WelcomeScreen() {
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+    <Screen scroll={false} contentStyle={styles.content}>
+      <View style={styles.top}>
+        <AuraLogo />
+        <Text style={styles.kicker}>AI-POWERED FITNESS INTELLIGENCE</Text>
+      </View>
+      <View style={styles.hero}>
+        <Text style={styles.headline}>Understand Your Body.{`\n`}Train Smarter.</Text>
+        <Text style={styles.body}>A focused daily view of your recovery, readiness and training direction.</Text>
+        <View style={styles.benefits}>
+          <Text style={styles.benefit}>• Know your recovery</Text>
+          <Text style={styles.benefit}>• Train with readiness in mind</Text>
+          <Text style={styles.benefit}>• Recover with clarity</Text>
+        </View>
+      </View>
+      <View style={styles.bottom}>
+        <StatusBadge label="DEMO MODE · SYNTHETIC DATA" tone="cyan" />
+        <PrimaryButton label="Continue" onPress={() => router.replace('/home')} />
+        <Text style={styles.disclaimer}>AuraSync+ is a fitness and wellness prototype, not a medical device or medical advice.</Text>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  content: { flex: 1, justifyContent: 'space-between', paddingBottom: spacing.xxl },
+  top: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
+  kicker: { color: colors.silver, fontSize: typography.label, letterSpacing: 1.2, fontWeight: '700' },
+  hero: { gap: spacing.lg },
+  headline: { color: colors.white, textAlign: 'center', fontSize: typography.hero, fontWeight: '700', lineHeight: 42, letterSpacing: -0.7 },
+  body: { color: colors.silver, fontSize: typography.body, textAlign: 'center', lineHeight: 22, paddingHorizontal: spacing.lg },
+  benefits: { gap: spacing.sm, alignSelf: 'center' },
+  benefit: { color: colors.white, fontSize: typography.body },
+  bottom: { gap: spacing.md },
+  disclaimer: { color: colors.muted, fontSize: 11, lineHeight: 16, textAlign: 'center', paddingHorizontal: spacing.sm },
 });

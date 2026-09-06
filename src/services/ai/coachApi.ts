@@ -14,7 +14,7 @@ export async function askCoach(request: AIRequest): Promise<AIResponse> {
 
     const data = (await response.json()) as AIResponse;
     return data;
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: 'Unable to reach AI Coach. Please try again.',

@@ -129,7 +129,7 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
       <GlassCard style={styles.contextCard}>
         <Ionicons name="sparkles" size={22} color={colors.cyan} />
         <View style={styles.contextCopy}>
-          <Text style={styles.contextTitle}>Today's readiness context</Text>
+          <Text style={styles.contextTitle}>Today’s readiness context</Text>
           <Text style={styles.contextText}>
             Recovery {recovery.score} | {recovery.readiness} | Sleep {snapshot.metrics.sleep.value} hrs
           </Text>

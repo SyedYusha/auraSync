@@ -1,30 +1,38 @@
-import { router } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AuraLogo } from '@/components/AuraLogo';
-import { PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
+import { useAuth } from '@/state/AuthProvider';
 import { colors, spacing, typography } from '@/theme';
 
-export default function WelcomeScreen() {
+export default function SplashScreen() {
+  const { authStatus } = useAuth();
+  const navigationState = useRootNavigationState();
+
+  useEffect(() => {
+    if (!navigationState?.key) {
+      return;
+    }
+
+    if (authStatus === 'loading') {
+      return;
+    }
+    if (authStatus === 'unauthenticated') {
+      router.replace('/(auth)/login');
+    } else if (authStatus === 'onboarding') {
+      router.replace('/onboarding');
+    } else {
+      router.replace('/home');
+    }
+  }, [authStatus, navigationState?.key]);
+
   return (
     <Screen scroll={false} contentStyle={styles.content}>
-      <View style={styles.top}>
-        <AuraLogo />
-        <Text style={styles.kicker}>AI-POWERED FITNESS INTELLIGENCE</Text>
-      </View>
-      <View style={styles.hero}>
-        <Text style={styles.headline}>Understand Your Body.{`\n`}Train Smarter.</Text>
-        <Text style={styles.body}>A focused daily view of your recovery, readiness and training direction.</Text>
-        <View style={styles.benefits}>
-          <Text style={styles.benefit}>• Know your recovery</Text>
-          <Text style={styles.benefit}>• Train with readiness in mind</Text>
-          <Text style={styles.benefit}>• Recover with clarity</Text>
-        </View>
-      </View>
-      <View style={styles.bottom}>
-        <StatusBadge label="DEMO MODE · SYNTHETIC DATA" tone="cyan" />
-        <PrimaryButton label="Continue" onPress={() => router.replace('/home')} />
+      <AuraLogo />
+      <View style={styles.footer}>
+        <Text style={styles.tagline}>AI-POWERED FITNESS INTELLIGENCE</Text>
         <Text style={styles.disclaimer}>AuraSync+ is a fitness and wellness prototype, not a medical device or medical advice.</Text>
       </View>
     </Screen>
@@ -32,14 +40,8 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { flex: 1, justifyContent: 'space-between', paddingBottom: spacing.xxl },
-  top: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.lg },
-  kicker: { color: colors.silver, fontSize: typography.label, letterSpacing: 1.2, fontWeight: '700' },
-  hero: { gap: spacing.lg },
-  headline: { color: colors.white, textAlign: 'center', fontSize: typography.hero, fontWeight: '700', lineHeight: 42, letterSpacing: -0.7 },
-  body: { color: colors.silver, fontSize: typography.body, textAlign: 'center', lineHeight: 22, paddingHorizontal: spacing.lg },
-  benefits: { gap: spacing.sm, alignSelf: 'center' },
-  benefit: { color: colors.white, fontSize: typography.body },
-  bottom: { gap: spacing.md },
-  disclaimer: { color: colors.muted, fontSize: 11, lineHeight: 16, textAlign: 'center', paddingHorizontal: spacing.sm },
+  content: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xxl, paddingBottom: spacing.xxl },
+  footer: { alignItems: 'center', gap: spacing.md },
+  tagline: { color: colors.silver, fontSize: typography.label, letterSpacing: 1.2, fontWeight: '700' },
+  disclaimer: { color: colors.muted, fontSize: 11, lineHeight: 16, textAlign: 'center', paddingHorizontal: spacing.xxl },
 });

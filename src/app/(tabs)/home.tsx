@@ -1,13 +1,17 @@
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { MetricGrid } from '@/components/health/MetricCard';
 import { RecoveryCard, RecoveryFactorList } from '@/components/health/RecoveryCard';
 import { ErrorState, LoadingState, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
 import { WorkoutRecommendationCard } from '@/components/workout/WorkoutRecommendationCard';
+import { useAuth } from '@/state/AuthProvider';
 import { useHealthData } from '@/state/HealthDataProvider';
 import { useRecovery } from '@/state/useRecovery';
+import { useWorkoutPlan } from '@/state/WorkoutPlanProvider';
 import { colors, spacing, typography } from '@/theme';
+import type { HealthSnapshot } from '@/types/health';
 
 export default function HomeScreen() {
   const { status, snapshot, error, refresh } = useHealthData();
@@ -22,16 +26,19 @@ export default function HomeScreen() {
   return <HomeContent snapshot={snapshot} onRefresh={() => void refresh()} />;
 }
 
-function HomeContent({ snapshot, onRefresh }: { readonly snapshot: NonNullable<ReturnType<typeof useHealthData>['snapshot']>; readonly onRefresh: () => void }) {
+function HomeContent({ snapshot, onRefresh }: { readonly snapshot: HealthSnapshot; readonly onRefresh: () => void }) {
+  const { profile } = useAuth();
+  const { status: planStatus, plan } = useWorkoutPlan();
   const recovery = useRecovery(snapshot);
   const keyMetrics = [snapshot.metrics.hrv, snapshot.metrics.sleep, snapshot.metrics.stress, snapshot.metrics.trainingLoad];
+  const memberName = profile?.fullName ?? snapshot.member.name;
 
   return (
     <Screen refreshing={false} onRefresh={onRefresh}>
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Good morning,</Text>
-          <Text style={styles.name}>{snapshot.member.name}</Text>
+          <Text style={styles.name}>{memberName}</Text>
         </View>
         <StatusBadge label="DEMO MODE" tone="cyan" />
       </View>
@@ -41,7 +48,15 @@ function HomeContent({ snapshot, onRefresh }: { readonly snapshot: NonNullable<R
         <Text style={styles.sectionNote}>Synthetic</Text>
       </View>
       <MetricGrid metrics={keyMetrics} />
-      <WorkoutRecommendationCard onViewPlan={() => Alert.alert('Upper Body Strength', 'High intensity · 52 minutes\nFocus: Chest, Back & Shoulders')} />
+      <WorkoutRecommendationCard
+        title={plan?.title}
+        intensity={plan?.intensity}
+        durationMin={plan?.durationMin}
+        focus={plan?.focus}
+        reason={plan?.reason}
+        isLoading={planStatus === 'loading' || !plan}
+        onViewPlan={() => router.push('/workout-plan')}
+      />
       <RecoveryFactorList recovery={recovery} />
     </Screen>
   );

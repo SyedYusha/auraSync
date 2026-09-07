@@ -16,8 +16,13 @@ create table if not exists public.profiles (
   fitness_level text not null check (fitness_level in ('Beginner', 'Intermediate', 'Advanced')),
   height_cm int not null check (height_cm between 120 and 230),
   weight_kg int not null check (weight_kg between 30 and 250),
+  role text not null default 'member' check (role in ('member', 'trainer', 'gym_owner')),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+  add column if not exists role text not null default 'member'
+  check (role in ('member', 'trainer', 'gym_owner'));
 
 alter table public.profiles enable row level security;
 
@@ -27,11 +32,14 @@ create policy "profiles_select_own" on public.profiles
 
 drop policy if exists "profiles_upsert_own" on public.profiles;
 create policy "profiles_upsert_own" on public.profiles
-  for insert with check (auth.uid() = id);
+  for insert with check (auth.uid() = id and role = 'member');
 
 drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
+
+revoke update on table public.profiles from authenticated;
+grant update (full_name, age, gender, fitness_goal, fitness_level, height_cm, weight_kg, updated_at) on table public.profiles to authenticated;
 
 -- HEALTH METRICS ----------------------------------------------------------
 create table if not exists public.health_metrics (

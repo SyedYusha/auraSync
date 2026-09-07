@@ -14,17 +14,19 @@ function TabBackground() {
 }
 
 export default function MemberTabsLayout() {
-  const { authStatus } = useAuth();
+  const { authStatus, role } = useAuth();
 
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
       router.replace('/(auth)/login');
     } else if (authStatus === 'onboarding') {
       router.replace('/onboarding');
+    } else if (authStatus === 'authenticated' && role === 'gym_owner') {
+      router.replace('/owner' as never);
     }
-  }, [authStatus]);
+  }, [authStatus, role]);
 
-  if (authStatus === 'loading' || authStatus === 'unauthenticated' || authStatus === 'onboarding') {
+  if (authStatus === 'loading' || authStatus === 'unauthenticated' || authStatus === 'onboarding' || role === 'gym_owner') {
     return (
       <Screen scroll={false}>
         <LoadingState label="Loading your member area…" />

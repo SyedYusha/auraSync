@@ -18,6 +18,7 @@ export default function RootLayout() {
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="onboarding" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="owner" />
               <Stack.Screen name="workout-plan" />
               <Stack.Screen name="active-workout" />
               <Stack.Screen name="history" />

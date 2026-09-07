@@ -17,7 +17,7 @@ const GOALS: readonly FitnessGoal[] = ['Muscle Gain', 'Fat Loss', 'Strength', 'E
 const LEVELS: readonly FitnessLevel[] = ['Beginner', 'Intermediate', 'Advanced'];
 
 export default function OnboardingScreen() {
-  const { authStatus, profile, user, saveProfile } = useAuth();
+  const { authStatus, profile, role, user, saveProfile } = useAuth();
   const [fullName, setFullName] = useState(profile?.fullName ?? '');
   const [age, setAge] = useState(profile?.age ? String(profile.age) : '');
   const [gender, setGender] = useState<Gender | null>(profile?.gender ?? null);
@@ -30,10 +30,12 @@ export default function OnboardingScreen() {
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
       router.replace('/(auth)/login');
-    } else if (authStatus === 'authenticated') {
+    } else if (authStatus === 'authenticated' && role === 'gym_owner') {
+      router.replace('/owner' as never);
+    } else if (authStatus === 'authenticated' && role) {
       router.replace('/home');
     }
-  }, [authStatus]);
+  }, [authStatus, role]);
 
   const handleSave = async () => {
     const parsedAge = Number.parseInt(age, 10);

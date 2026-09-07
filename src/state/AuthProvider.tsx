@@ -2,16 +2,20 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { authService } from '@/services/auth/authService';
 import { profileService } from '@/services/profile/profileService';
-import type { AuthResult, AuthUser, MemberProfile } from '@/types/member';
+import type { AppRole, AuthResult, AuthUser, MemberProfile } from '@/types/member';
 
 export type AuthStatus = 'loading' | 'unauthenticated' | 'onboarding' | 'authenticated';
+
+type DemoRole = Extract<AppRole, 'member' | 'gym_owner'>;
 
 interface AuthContextValue {
   readonly authStatus: AuthStatus;
   readonly user: AuthUser | null;
   readonly profile: MemberProfile | null;
+  readonly role: AppRole | null;
   readonly isSaving: boolean;
   signIn(email: string, password: string): Promise<AuthResult>;
+  signInDemo(role: DemoRole): Promise<AuthResult>;
   signUp(email: string, password: string, fullName: string): Promise<AuthResult>;
   resetPassword(email: string): Promise<AuthResult>;
   signOut(): Promise<void>;
@@ -23,6 +27,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profile, setProfile] = useState<MemberProfile | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -30,9 +35,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     try {
       const loaded = await profileService.loadProfile(nextUser.id);
       setProfile(loaded);
+      setRole(loaded?.role ?? null);
       setAuthStatus(loaded ? 'authenticated' : 'onboarding');
     } catch {
       setProfile(null);
+      setRole(null);
       setAuthStatus('onboarding');
     }
   }, []);
@@ -50,6 +57,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (!initialUser) {
           setUser(null);
           setProfile(null);
+          setRole(null);
           setAuthStatus('unauthenticated');
           return;
         }
@@ -60,6 +68,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         if (!cancelled) {
           setUser(null);
           setProfile(null);
+          setRole(null);
           setAuthStatus('unauthenticated');
         }
       }
@@ -92,6 +101,17 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [finishAuth],
   );
 
+  const signInDemo = useCallback(
+    async (demoRole: DemoRole): Promise<AuthResult> => {
+      const result = await authService.signInDemo(demoRole);
+      if (!result.ok || !result.user) {
+        return { ok: false, error: result.error };
+      }
+      return finishAuth(result.user);
+    },
+    [finishAuth],
+  );
+
   const signUp = useCallback(
     async (email: string, password: string, fullName: string): Promise<AuthResult> => {
       const result = await authService.signUp(email, password, fullName);
@@ -114,6 +134,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     await authService.signOut();
     setUser(null);
     setProfile(null);
+    setRole(null);
     setAuthStatus('unauthenticated');
   }, []);
 
@@ -127,6 +148,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       try {
         await profileService.saveProfile(user.id, nextProfile);
         setProfile(nextProfile);
+        setRole((current) => current ?? 'member');
         setAuthStatus('authenticated');
         return true;
       } catch {
@@ -139,8 +161,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   const value = useMemo(
-    () => ({ authStatus, user, profile, isSaving, signIn, signUp, resetPassword, signOut, saveProfile }),
-    [authStatus, isSaving, profile, resetPassword, saveProfile, signIn, signOut, signUp, user],
+    () => ({ authStatus, user, profile, role, isSaving, signIn, signInDemo, signUp, resetPassword, signOut, saveProfile }),
+    [authStatus, isSaving, profile, resetPassword, role, saveProfile, signIn, signInDemo, signOut, signUp, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

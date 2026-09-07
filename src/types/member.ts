@@ -1,6 +1,7 @@
 export type FitnessGoal = 'Muscle Gain' | 'Fat Loss' | 'Strength' | 'Endurance' | 'General Fitness';
 export type FitnessLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 export type Gender = 'Male' | 'Female' | 'Other';
+export type AppRole = 'member' | 'trainer' | 'gym_owner';
 
 export interface MemberProfile {
   readonly fullName: string;
@@ -10,6 +11,10 @@ export interface MemberProfile {
   readonly fitnessLevel: FitnessLevel;
   readonly heightCm: number;
   readonly weightKg: number;
+}
+
+export interface ResolvedMemberProfile extends MemberProfile {
+  readonly role: AppRole;
 }
 
 export interface AuthUser {

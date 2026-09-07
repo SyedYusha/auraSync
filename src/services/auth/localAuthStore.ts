@@ -1,14 +1,29 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { AuthUser } from '@/types/member';
+import type { AppRole, AuthUser } from '@/types/member';
 
 const USERS_KEY = 'aurasync_demo_users';
 const SESSION_KEY = 'aurasync_demo_session';
+
+type DemoRole = Extract<AppRole, 'member' | 'gym_owner'>;
 
 interface LocalUserRecord extends AuthUser {
   readonly passwordHash: string;
   readonly fullName: string;
 }
+
+const DEMO_ACCOUNTS: Record<DemoRole, { readonly id: string; readonly email: string; readonly fullName: string }> = {
+  member: {
+    id: 'local-demo-member',
+    email: 'demo.member@aurasync.local',
+    fullName: 'Alex Morgan',
+  },
+  gym_owner: {
+    id: 'local-demo-gym-owner',
+    email: 'demo.owner@aurasync.local',
+    fullName: 'Jordan Williams',
+  },
+};
 
 // Demo-only obfuscation for the local fallback auth used when Supabase is not
 // configured. This is never used when real credentials are supplied.
@@ -48,6 +63,24 @@ export const localAuthStore = {
     const users = await readUsers();
     const user = users[email];
     if (!user || user.passwordHash !== hashPassword(password)) return null;
+    return { id: user.id, email: user.email };
+  },
+
+  async getDemoUser(role: DemoRole): Promise<AuthUser> {
+    const account = DEMO_ACCOUNTS[role];
+    const users = await readUsers();
+    const existing = users[account.email];
+
+    if (existing) {
+      return { id: existing.id, email: existing.email };
+    }
+
+    const user: LocalUserRecord = {
+      ...account,
+      passwordHash: hashPassword('local-demo-only'),
+    };
+    users[account.email] = user;
+    await writeUsers(users);
     return { id: user.id, email: user.email };
   },
 

@@ -1,7 +1,31 @@
-import type { AuthResult, AuthUser } from '@/types/member';
+import { profileService } from '@/services/profile/profileService';
+import type { AppRole, AuthResult, AuthUser, MemberProfile } from '@/types/member';
 
 import { localAuthStore } from './localAuthStore';
 import { supabase } from './supabaseClient';
+
+type DemoRole = Extract<AppRole, 'member' | 'gym_owner'>;
+
+const DEMO_PROFILES: Record<DemoRole, MemberProfile> = {
+  member: {
+    fullName: 'Alex Morgan',
+    age: 28,
+    gender: 'Other',
+    fitnessGoal: 'General Fitness',
+    fitnessLevel: 'Intermediate',
+    heightCm: 172,
+    weightKg: 70,
+  },
+  gym_owner: {
+    fullName: 'Jordan Williams',
+    age: 36,
+    gender: 'Other',
+    fitnessGoal: 'Strength',
+    fitnessLevel: 'Intermediate',
+    heightCm: 178,
+    weightKg: 76,
+  },
+};
 
 export const authService = {
   async getInitialSession(): Promise<AuthUser | null> {
@@ -23,6 +47,17 @@ export const authService = {
     }
     const user = await localAuthStore.signIn(normalized, password);
     if (!user) return { ok: false, error: 'Invalid email or password.' };
+    await localAuthStore.saveSession(user);
+    return { ok: true, user };
+  },
+
+  async signInDemo(role: DemoRole): Promise<AuthResult> {
+    if (supabase) {
+      return { ok: false, error: 'Demo accounts are unavailable while Supabase is configured.' };
+    }
+
+    const user = await localAuthStore.getDemoUser(role);
+    await profileService.ensureLocalDemoProfile(user.id, DEMO_PROFILES[role], role);
     await localAuthStore.saveSession(user);
     return { ok: true, user };
   },

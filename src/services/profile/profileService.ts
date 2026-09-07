@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { MemberProfile } from '@/types/member';
+import type { AppRole, MemberProfile, ResolvedMemberProfile } from '@/types/member';
 
 import { supabase } from '../auth/supabaseClient';
 
@@ -14,10 +14,21 @@ interface ProfileRow {
   fitness_level: string;
   height_cm: number;
   weight_kg: number;
+  role?: string;
+}
+
+function resolveRole(value: unknown): AppRole {
+  return value === 'trainer' || value === 'gym_owner' || value === 'member' ? value : 'member';
+}
+
+function parseLocalProfile(raw: string | null): ResolvedMemberProfile | null {
+  if (!raw) return null;
+  const profile = JSON.parse(raw) as MemberProfile & { readonly role?: unknown };
+  return { ...profile, role: resolveRole(profile.role) };
 }
 
 export const profileService = {
-  async loadProfile(userId: string): Promise<MemberProfile | null> {
+  async loadProfile(userId: string): Promise<ResolvedMemberProfile | null> {
     if (supabase) {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
       if (error || !data) return null;
@@ -30,10 +41,10 @@ export const profileService = {
         fitnessLevel: row.fitness_level as MemberProfile['fitnessLevel'],
         heightCm: Number(row.height_cm),
         weightKg: Number(row.weight_kg),
+        role: resolveRole(row.role),
       };
     }
-    const raw = await AsyncStorage.getItem(localKey(userId));
-    return raw ? (JSON.parse(raw) as MemberProfile) : null;
+    return parseLocalProfile(await AsyncStorage.getItem(localKey(userId)));
   },
 
   async saveProfile(userId: string, profile: MemberProfile): Promise<void> {
@@ -52,6 +63,15 @@ export const profileService = {
       if (error) throw new Error(error.message);
       return;
     }
-    await AsyncStorage.setItem(localKey(userId), JSON.stringify(profile));
+
+    const existing = parseLocalProfile(await AsyncStorage.getItem(localKey(userId)));
+    await AsyncStorage.setItem(localKey(userId), JSON.stringify({ ...profile, role: existing?.role ?? 'member' }));
+  },
+
+  async ensureLocalDemoProfile(userId: string, profile: MemberProfile, role: Extract<AppRole, 'member' | 'gym_owner'>): Promise<void> {
+    if (supabase) return;
+
+    const existing = parseLocalProfile(await AsyncStorage.getItem(localKey(userId)));
+    await AsyncStorage.setItem(localKey(userId), JSON.stringify({ ...(existing ?? profile), role }));
   },
 };

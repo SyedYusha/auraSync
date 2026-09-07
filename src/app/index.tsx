@@ -8,25 +8,24 @@ import { useAuth } from '@/state/AuthProvider';
 import { colors, spacing, typography } from '@/theme';
 
 export default function SplashScreen() {
-  const { authStatus } = useAuth();
+  const { authStatus, role } = useAuth();
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    if (!navigationState?.key) {
+    if (!navigationState?.key || authStatus === 'loading') {
       return;
     }
 
-    if (authStatus === 'loading') {
-      return;
-    }
     if (authStatus === 'unauthenticated') {
       router.replace('/(auth)/login');
     } else if (authStatus === 'onboarding') {
       router.replace('/onboarding');
-    } else {
+    } else if (role === 'gym_owner') {
+      router.replace('/owner' as never);
+    } else if (role) {
       router.replace('/home');
     }
-  }, [authStatus, navigationState?.key]);
+  }, [authStatus, navigationState?.key, role]);
 
   return (
     <Screen scroll={false} contentStyle={styles.content}>

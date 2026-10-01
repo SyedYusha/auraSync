@@ -143,39 +143,22 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
   table { width: 100%; border-collapse: collapse; page-break-inside: auto; background: rgba(6, 35, 38, 0.55); border-radius: 8px; overflow: hidden; border: 1px solid rgba(118, 239, 244, 0.15); }
   thead { display: table-header-group; }
   tr { page-break-inside: avoid; }
-<<<<<<< HEAD
-  th { background: #062326; color: #00E5FF; text-align: left; padding: 9px 10px; font-size: 9px; letter-spacing: .8px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid rgba(118, 239, 244, 0.25); }
-  td { padding: 9px 10px; border-bottom: 1px solid rgba(166, 178, 184, 0.12); vertical-align: top; color: #A6B2B8; font-size: 10.5px; }
-  tbody tr:nth-child(even) { background: rgba(11, 58, 61, 0.25); }
-  .strong { font-weight: 700; color: #FFFFFF; }
-  .value { font-weight: 800; color: #00E5FF; }
-  .empty { color: #789095; text-align: center; padding: 18px; font-style: italic; }
-  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-  .summary-card { background: rgba(6, 35, 38, 0.65); border: 1px solid rgba(118, 239, 244, 0.2); border-radius: 10px; padding: 12px; min-height: 60px; }
-  .summary-label { color: #789095; font-size: 8.5px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
-  .summary-value { font-size: 20px; font-weight: 800; margin-top: 4px; color: #00E5FF; }
-  .notice { margin-top: 24px; border: 1px solid rgba(118, 239, 244, 0.25); background: rgba(6, 35, 38, 0.45); border-radius: 8px; padding: 12px; font-size: 9px; line-height: 1.6; color: #A6B2B8; }
-  .notice strong { color: #00E5FF; font-weight: 800; }
-  .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid rgba(118, 239, 244, 0.2); color: #789095; font-size: 8.5px; line-height: 1.5; display: flex; justify-content: space-between; gap: 15px; }
-  .footer-brand { color: #00E5FF; font-weight: 800; }
-=======
-  th { background: #111111; color: #FFFFFF; text-align: left; padding: 8px 7px; font-size: 8.5px; letter-spacing: .7px; text-transform: uppercase; }
-  td { padding: 8px 7px; border-bottom: 1px solid #D8D8D8; vertical-align: top; }
+  th { background: #111111; color: #FFFFFF; text-align: left; padding: 8px 7px; font-size: 8.5px; letter-spacing: .7px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid #222222; }
+  td { padding: 8px 7px; border-bottom: 1px solid #D8D8D8; vertical-align: top; color: #222222; }
   tbody tr:nth-child(even) { background: #F7F7F7; }
   .strong { font-weight: 700; color: #111111; }
-  .value { font-weight: 700; }
+  .value { font-weight: 800; color: #111111; }
   .empty { color: #777777; text-align: center; padding: 16px; }
-  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
   .summary-card { border: 1px solid #CCCCCC; padding: 10px; min-height: 55px; }
   .summary-label { color: #666666; font-size: 8px; text-transform: uppercase; letter-spacing: .8px; }
-  .summary-value { font-size: 17px; font-weight: 800; margin-top: 4px; }
+  .summary-value { font-size: 17px; font-weight: 800; margin-top: 4px; color: #111111; }
   .insight-box { border: 1px solid #CCCCCC; padding: 10px 12px; line-height: 1.5; }
   .insight-box ul { margin: 0 0 10px 18px; padding: 0; }
   .next-action { border-top: 1px solid #D8D8D8; padding-top: 8px; }
   .notice { margin-top: 20px; border: 1px solid #AAAAAA; padding: 10px; font-size: 9px; line-height: 1.5; }
   .footer { margin-top: 24px; padding-top: 9px; border-top: 1px solid #222222; color: #666666; font-size: 8px; line-height: 1.5; display: flex; justify-content: space-between; gap: 15px; }
   .footer-brand { color: #111111; font-weight: 800; }
->>>>>>> 5fb5ef8097362290a1b6c788ab3899c21ca119cd
 </style>
 </head>
 <body>

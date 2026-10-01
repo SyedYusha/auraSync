@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { MetricGrid } from '@/components/health/MetricCard';
+import { HealthTrendChart } from '@/components/health/HealthTrendChart';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, LoadingState, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
@@ -48,6 +49,7 @@ function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { r
       </View>
       <MetricGrid metrics={metrics} />
       {!isDemoMode ? <PrimaryButton label="UPDATE HEALTH DATA" onPress={() => router.push("/manual-health")} /> : null}
+      {activityHistory.length > 1 ? <GlassCard style={styles.trendCard}><HealthTrendChart data={activityHistory} metric="hrv" label="HRV trend" unit=" ms" /><HealthTrendChart data={activityHistory} metric="sleep" label="Sleep trend" unit=" h" /><HealthTrendChart data={activityHistory} metric="stress" label="Stress trend" unit="" /></GlassCard> : null}
       {activityHistory.length > 0 ? <GlassCard style={styles.trendCard}>
         <Text style={styles.sectionTitle}>RECENT TREND</Text>
         <Text style={styles.description}>Last {Math.min(activityHistory.length, 7)} entries · newest first</Text>

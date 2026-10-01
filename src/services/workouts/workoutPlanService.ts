@@ -4,6 +4,7 @@ import { EXERCISE_LIBRARY, type ExerciseCategory } from '@/domain/workout/exerci
 import type { WorkoutPlan, WorkoutPlanInput } from '@/types/workout';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? '' : 'http://localhost:3001');
+const REQUEST_TIMEOUT_MS = 30_000;
 
 const byCategory = (category: ExerciseCategory): PlannedExercise[] =>
   EXERCISE_LIBRARY.filter((exercise) => exercise.category === category)
@@ -104,6 +105,8 @@ interface WorkoutPlanResponse {
 }
 
 export async function requestWorkoutPlan(input: WorkoutPlanInput): Promise<WorkoutPlan> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(`${API_BASE_URL}/api/ai/workout-plan`, {
       method: 'POST',
@@ -114,14 +117,17 @@ export async function requestWorkoutPlan(input: WorkoutPlanInput): Promise<Worko
         recentWorkouts: serializeRecentWorkouts(input.recentWorkouts),
         isDemoMode: input.isDemoMode,
       }),
+      signal: controller.signal,
     });
 
     const data = (await response.json()) as WorkoutPlanResponse;
-    if (data.success && data.plan && data.plan.exercises.length > 0) {
+    if (response.ok && data.success && data.plan && data.plan.exercises.length > 0) {
       return { ...data.plan, isFallback: false };
     }
   } catch {
     // Use the deterministic plan when the AI service is unavailable.
+  } finally {
+    clearTimeout(timeout);
   }
 
   return buildFallbackPlan(input);

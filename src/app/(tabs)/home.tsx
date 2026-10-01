@@ -40,7 +40,8 @@ function HomeContent({ snapshot, onRefresh, isDemoMode }: { readonly snapshot: H
           <Text style={styles.emptyEyebrow}>PERSONAL FITNESS INTELLIGENCE</Text>
           <Text style={styles.emptyTitle}>Your data starts here.</Text>
           <Text style={styles.emptyText}>AuraSync+ has no health data for this account yet. Connect a health source or complete your first activity to start building your personal baseline.</Text>
-          <PrimaryButton label="SET UP HEALTH DATA" onPress={() => router.push('/profile')} />
+          <PrimaryButton label="ENTER HEALTH DATA" onPress={() => router.push('/manual-health')} />
+          <PrimaryButton label="HEALTH SETUP" onPress={() => router.push('/profile')} />
         </GlassCard>
       ) : (
         <>

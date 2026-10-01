@@ -38,7 +38,19 @@ export default function ActiveWorkoutScreen() {
   const finishedRef = useRef(false);
 
   useEffect(() => {
-    const loadCustom = async () => {
+    const loadSelectedWorkout = async () => {
+      const aiRaw = await AsyncStorage.getItem('aurasync_active_ai_workout');
+      if (aiRaw) {
+        try {
+          const selected = JSON.parse(aiRaw) as typeof plan;
+          if (selected?.exercises?.length) {
+            setCustomPlan(selected);
+            await AsyncStorage.removeItem('aurasync_active_ai_workout');
+            return;
+          }
+        } catch {}
+      }
+
       const raw = await AsyncStorage.getItem('aurasync_active_custom_workout');
       if (!raw) return;
       try {
@@ -47,7 +59,7 @@ export default function ActiveWorkoutScreen() {
         setCustomPlan({ title: 'Custom Workout', intensity: 'Moderate', durationMin: Math.max(15, items.length * 8), focus: items.map(x => x.category).filter((v,i,a)=>a.indexOf(v)===i).join(' • '), reason: 'Built by you.', recoveryTip: 'Adjust intensity based on how you feel.', exercises: items, isFallback: false });
       } catch {}
     };
-    void loadCustom();
+    void loadSelectedWorkout();
   }, []);
 
   const activePlan = customPlan ?? plan;
@@ -159,7 +171,7 @@ export default function ActiveWorkoutScreen() {
     } catch {
       // The local fallback still keeps the session if Supabase is unavailable.
     } finally {
-      await AsyncStorage.removeItem('aurasync_active_custom_workout');
+      await AsyncStorage.multiRemove(['aurasync_active_custom_workout', 'aurasync_active_ai_workout']);
       router.replace('/history');
     }
   };

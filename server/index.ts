@@ -1,6 +1,7 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Request } from 'express';
+import { generateAIJSON, getAIProviderStatus } from './aiRouter';
 
 dotenv.config({ path: '.env' });
 dotenv.config({ path: '../.env' });
@@ -680,6 +681,67 @@ Provide one careful owner-reviewed retention recommendation.`;
       fallback: true,
     } satisfies RetentionResponse);
   }
+});
+
+
+/**
+ * Phase 2 AI router endpoint.
+ * Uses configured providers in AI_PROVIDER_ORDER and falls through on provider failure.
+ * API keys remain server-side.
+ */
+app.post('/api/ai/coach', async (req, res) => {
+  const body = req.body as CoachRequest;
+  if (!body?.question || !body?.healthContext) {
+    res.status(400).json({
+      success: false,
+      error: 'Missing question or health context.',
+      fallback: true,
+    } satisfies CoachResponse);
+    return;
+  }
+
+  const demoNote = body.isDemoMode
+    ? '\\n\\nIMPORTANT: The data above is demo/synthetic data for prototype purposes. Do not claim it was collected from a physical wearable.'
+    : '';
+
+  try {
+    const result = await generateAIJSON({
+      system: SYSTEM_PROMPT,
+      user: `${body.healthContext}${demoNote}\\n\\nUser Question: ${body.question}`,
+      temperature: 0.7,
+      maxTokens: 800,
+    });
+
+    const recommendation = parseAIResponse(result.content);
+    if (!recommendation) {
+      throw new Error(`AI response from ${result.provider} could not be parsed as the required JSON schema.`);
+    }
+
+    res.json({
+      success: true,
+      recommendation,
+      fallback: false,
+      provider: result.provider,
+    });
+  } catch (error) {
+    console.error('Multi-provider AI Coach failed:', error);
+    res.status(503).json({
+      success: false,
+      error: 'AI providers are currently unavailable. AuraSync fallback can be used by the app.',
+      fallback: true,
+    } satisfies CoachResponse);
+  }
+});
+
+app.get('/api/ai/status', (_req, res) => {
+  res.json({
+    status: 'ok',
+    providers: getAIProviderStatus(),
+    order: (process.env.AI_PROVIDER_ORDER || 'openai,gemini,deepseek')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  });
 });
 
 const port = Number(process.env.PORT) || 3001;

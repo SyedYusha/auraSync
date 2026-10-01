@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.cyan },
   currentCard: { gap: spacing.sm },
   currentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  currentName: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
+  currentName: { color: colors.white, fontSize: typography.h1, fontWeight: '700', flex: 1 },
   setRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
   setCell: { flex: 1, alignItems: 'center', gap: 3 },
   setLabel: { color: colors.muted, fontSize: typography.label, fontWeight: '700', letterSpacing: 0.5 },

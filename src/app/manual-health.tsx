@@ -72,6 +72,7 @@ export default function ManualHealthScreen() {
         caloriesBurned: parsed.caloriesBurned || 0,
         activeMinutes: parsed.activeMinutes || 0,
       });
+      await refresh();
       Alert.alert('Data saved', 'Your health report is now updated.', [{ text: 'View dashboard', onPress: () => router.replace('/(tabs)/home') }]);
     } finally {
       setSaving(false);

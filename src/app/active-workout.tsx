@@ -158,9 +158,6 @@ export default function ActiveWorkoutScreen() {
     const status: WorkoutStatus = allSetsDone ? 'Completed' : 'Partial';
 
     try {
-<<<<<<< HEAD
-      await workoutService.saveWorkout(targetUserId, {
-=======
       const performedExercises = activePlan.exercises
         .map((exercise, index) => ({
           ...exercise,
@@ -172,8 +169,7 @@ export default function ActiveWorkoutScreen() {
           reps: exercise.reps,
         }));
 
-      await workoutService.saveWorkout(user.id, {
->>>>>>> 5fb5ef8097362290a1b6c788ab3899c21ca119cd
+      await workoutService.saveWorkout(targetUserId, {
         id: `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
         date: new Date().toISOString(),
         type: activePlan.title,

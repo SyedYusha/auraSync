@@ -6,31 +6,6 @@ import type { WorkoutPlan, WorkoutPlanInput } from '@/types/workout';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? '' : 'http://localhost:3001');
 const REQUEST_TIMEOUT_MS = 30_000;
 
-<<<<<<< HEAD
-const UPPER_EXERCISES: readonly PlannedExercise[] = [
-  { name: 'Barbell bench press', sets: 4, reps: 8 },
-  { name: 'Wide-grip lat pulldown', sets: 4, reps: 10 },
-  { name: 'Standing barbell overhead press', sets: 3, reps: 10 },
-  { name: 'Seated cable row', sets: 3, reps: 10 },
-  { name: 'Dumbbell lateral raise', sets: 3, reps: 12 },
-];
-
-const LOWER_EXERCISES: readonly PlannedExercise[] = [
-  { name: 'Back squat', sets: 4, reps: 8 },
-  { name: 'Romanian deadlift', sets: 4, reps: 10 },
-  { name: 'Leg press', sets: 3, reps: 12 },
-  { name: 'Walking lunges', sets: 3, reps: 12 },
-  { name: 'Standing calf raise', sets: 3, reps: 15 },
-];
-
-const RECOVERY_EXERCISES: readonly PlannedExercise[] = [
-  { name: 'Goblet squat', sets: 3, reps: 12 },
-  { name: 'Incline dumbbell press', sets: 3, reps: 12 },
-  { name: 'Seated cable row', sets: 3, reps: 12 },
-  { name: 'Glute bridge', sets: 3, reps: 15 },
-  { name: 'Plank', sets: 3, reps: 60 },
-];
-=======
 const byCategory = (category: ExerciseCategory): PlannedExercise[] =>
   EXERCISE_LIBRARY.filter((exercise) => exercise.category === category)
     .slice(0, 5)
@@ -73,7 +48,6 @@ const fallbackExercises = (category: ExerciseCategory, recoveryScore: number): P
     reps: recoveryScore < 65 ? Math.min(12, exercise.reps + 2) : exercise.reps,
   }));
 };
->>>>>>> 5fb5ef8097362290a1b6c788ab3899c21ca119cd
 
 export function buildFallbackPlan(input: WorkoutPlanInput): WorkoutPlan {
   const category = chooseFallbackCategory(input);

@@ -1,14 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AuthInput } from '@/components/auth/AuthInput';
 import { OptionChips } from '@/components/auth/OptionChips';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { LoadingState, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
+import { LoadingState, OutlineButton, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/Screen';
+import {
+  getWearableState,
+  pairWearable,
+  unpairWearable,
+  syncWearableSignals,
+  type WearableDeviceState,
+} from '@/services/health/wearableSyncService';
 import { useAuth } from '@/state/AuthProvider';
+import { useHealthData } from '@/state/HealthDataProvider';
 import { colors, radii, spacing, typography } from '@/theme';
 import type { FitnessGoal, FitnessLevel, Gender, MemberProfile } from '@/types/member';
 
@@ -18,7 +26,36 @@ const LEVELS: readonly FitnessLevel[] = ['Beginner', 'Intermediate', 'Advanced']
 
 export default function ProfileScreen() {
   const { authStatus, user, profile, isSaving, saveProfile, signOut } = useAuth();
+  const { refresh: refreshHealth } = useHealthData();
   const [isEditing, setIsEditing] = useState(false);
+  const [wearable, setWearable] = useState<WearableDeviceState | null>(null);
+  const [isSyncingWearable, setIsSyncingWearable] = useState(false);
+
+  useEffect(() => {
+    void getWearableState().then(setWearable);
+  }, []);
+
+  const handlePair = async () => {
+    const updated = await pairWearable();
+    setWearable(updated);
+  };
+
+  const handleUnpair = async () => {
+    const updated = await unpairWearable();
+    setWearable(updated);
+  };
+
+  const handleSync = async () => {
+    const targetUserId = user?.id ?? 'demo_user';
+    setIsSyncingWearable(true);
+    try {
+      const { state: updated } = await syncWearableSignals(targetUserId);
+      setWearable(updated);
+      await refreshHealth();
+    } finally {
+      setIsSyncingWearable(false);
+    }
+  };
 
   if (authStatus === 'loading' || (!profile && authStatus === 'onboarding')) {
     return (
@@ -85,6 +122,58 @@ export default function ProfileScreen() {
             <DetailRow icon="barbell-outline" label="Weight" value={`${profile.weightKg} kg`} last />
           </GlassCard>
 
+          <Text style={styles.sectionTitle}>CONCEPTUAL AURASYNC+ BAND</Text>
+          <GlassCard style={styles.wearableCard}>
+            <View style={styles.wearableHeader}>
+              <View style={styles.wearableIconWrap}>
+                <Ionicons name="watch-outline" size={24} color={colors.cyan} />
+              </View>
+              <View style={styles.wearableCopy}>
+                <Text style={styles.wearableName}>{wearable?.deviceName ?? 'AuraSync+ Band'}</Text>
+                <Text style={styles.wearableSub}>
+                  {wearable?.isPaired
+                    ? `Paired • Battery ${wearable.batteryPercent}% • BLE Prototype`
+                    : 'Not paired • Simulation Ready'}
+                </Text>
+              </View>
+              <StatusBadge
+                label={wearable?.isPaired ? 'PAIRED' : 'STANDBY'}
+                tone={wearable?.isPaired ? 'good' : 'muted'}
+              />
+            </View>
+
+            <Text style={styles.wearableDisclaimer}>
+              Conceptual prototype simulator. Simulates local Bluetooth sensor transmission into your health dashboard. No physical hardware exists.
+            </Text>
+
+            {wearable?.lastSyncedAt ? (
+              <Text style={styles.lastSyncText}>
+                Last synced: {new Date(wearable.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            ) : null}
+
+            <View style={styles.wearableActionRow}>
+              {wearable?.isPaired ? (
+                <>
+                  <PrimaryButton
+                    label={isSyncingWearable ? 'SYNCING BLE SIGNALS…' : 'SYNC WEARABLE SIGNALS'}
+                    onPress={() => void handleSync()}
+                    disabled={isSyncingWearable}
+                  />
+                  <OutlineButton
+                    label="DISCONNECT BAND"
+                    onPress={() => void handleUnpair()}
+                  />
+                </>
+              ) : (
+                <PrimaryButton
+                  label="PAIR CONCEPTUAL BAND"
+                  onPress={() => void handlePair()}
+                />
+              )}
+            </View>
+          </GlassCard>
+
           <Text style={styles.sectionTitle}>HEALTH DATA SOURCE</Text>
           <GlassCard>
             <View style={styles.sourceRow}>
@@ -92,8 +181,8 @@ export default function ProfileScreen() {
                 <Ionicons name="flask" size={20} color={colors.cyan} />
               </View>
               <View style={styles.sourceCopy}>
-                <Text style={styles.sourceName}>Manual / Wearable Data</Text>
-                <Text style={styles.sourceDetail}>Enter measurements now; connect a wearable later for automatic sync.</Text>
+                <Text style={styles.sourceName}>Manual Health Data</Text>
+                <Text style={styles.sourceDetail}>Self-entered metrics or synced from the conceptual AuraSync+ band.</Text>
               </View>
               <StatusBadge label="ACTIVE" tone="good" />
             </View>
@@ -259,6 +348,15 @@ const styles = StyleSheet.create({
   },
   logoutLabel: { color: colors.danger, fontSize: typography.title, fontWeight: '800' },
   disclaimer: { color: colors.muted, textAlign: 'center', fontSize: 11, lineHeight: 16, marginTop: spacing.xs },
+  wearableCard: { gap: spacing.sm, borderWidth: 1, borderColor: colors.line },
+  wearableHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  wearableIconWrap: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(0, 229, 255, 0.1)', alignItems: 'center', justifyContent: 'center' },
+  wearableCopy: { flex: 1, gap: 2 },
+  wearableName: { color: colors.white, fontSize: typography.body, fontWeight: '700' },
+  wearableSub: { color: colors.silver, fontSize: typography.caption },
+  wearableDisclaimer: { color: colors.muted, fontSize: 11, lineHeight: 16, marginTop: 4 },
+  lastSyncText: { color: colors.cyan, fontSize: typography.caption, fontWeight: '600' },
+  wearableActionRow: { gap: spacing.xs, marginTop: spacing.xs },
   editCard: { gap: spacing.md },
   editHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   editTitle: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.7 },

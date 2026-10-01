@@ -16,6 +16,8 @@ import { useGymOwner } from '@/state/GymOwnerProvider';
 import { colors, radii, spacing, typography } from '@/theme';
 import type { ChurnInsight, GymMember, MembershipState, PaymentState } from '@/types/gym';
 
+import { exportCsvFile } from '@/utils/csvExport';
+
 type MembershipFilter = MembershipState | 'all';
 type PaymentFilter = PaymentState | 'all';
 
@@ -53,6 +55,30 @@ export default function GymMembersScreen() {
     });
   }, [members, membershipFilter, paymentFilter, query]);
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCsv = async () => {
+    setIsExporting(true);
+    try {
+      const headers = ['Member ID', 'Full Name', 'Email', 'Phone', 'Plan', 'State', 'Payment State', 'Joined At', 'Expires At', 'Last Check-In'];
+      const rows = visibleMembers.map((m) => [
+        m.id,
+        m.fullName,
+        m.email,
+        m.phone,
+        m.plan,
+        getMembershipState(m),
+        getPaymentState(m),
+        m.joinedAt,
+        m.membershipExpiresAt,
+        insightsByMemberId.get(m.id)?.lastCheckInAt ?? 'Never',
+      ]);
+      await exportCsvFile('aurasync_members.csv', headers, rows);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (status === 'error') {
     return <Screen scroll={false}><ErrorState message={error ?? 'Please try again.'} onRetry={() => void refresh()} /></Screen>;
   }
@@ -79,7 +105,19 @@ export default function GymMembersScreen() {
             <Text style={styles.eyebrow}>GYM INTELLIGENCE DEMO</Text>
             <Text style={styles.title}>Members</Text>
           </View>
-          <StatusBadge label={`${members.length} DEMO`} tone="muted" />
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Export CSV"
+              onPress={() => void handleExportCsv()}
+              disabled={isExporting}
+              style={styles.exportBtn}
+            >
+              <Ionicons name="download-outline" size={15} color={colors.cyan} />
+              <Text style={styles.exportBtnText}>{isExporting ? '...' : 'CSV'}</Text>
+            </Pressable>
+            <StatusBadge label={`${members.length} DEMO`} tone="muted" />
+          </View>
         </View>
       </FadeIn>
 
@@ -259,6 +297,19 @@ const styles = StyleSheet.create({
   name: { color: colors.white, fontSize: typography.body, fontWeight: '700' },
   detail: { color: colors.muted, fontSize: typography.caption, lineHeight: 17 },
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(0, 229, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.3)',
+  },
+  exportBtnText: { color: colors.cyan, fontSize: 11, fontWeight: '800' },
   badgeWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   buttonWrap: { flexShrink: 1 },
   emptyText: { color: colors.silver, fontSize: typography.body, textAlign: 'center', lineHeight: 20 },

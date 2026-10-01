@@ -55,16 +55,12 @@ function providerConfigs(): ProviderConfig[] {
 }
 
 async function callProvider(config: ProviderConfig, input: GenerateJSONInput): Promise<string> {
-<<<<<<< HEAD
-  const cleanBaseUrl = config.baseUrl.replace(/\/+$/, '');
-  const response = await fetch(`${cleanBaseUrl}/chat/completions`, {
-=======
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const cleanBaseUrl = config.baseUrl.replace(/\/+$/, '');
 
   try {
-    const response = await fetch(`${config.baseUrl.replace(/\\/+$/, '')}/chat/completions`, {
->>>>>>> 5fb5ef8097362290a1b6c788ab3899c21ca119cd
+    const response = await fetch(`${cleanBaseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

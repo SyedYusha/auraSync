@@ -11,10 +11,31 @@ import { formatGymDateTime } from '@/domain/gym/format';
 import { useGymOwner } from '@/state/GymOwnerProvider';
 import { colors, radii, spacing, typography } from '@/theme';
 
+import { exportCsvFile } from '@/utils/csvExport';
+
 export default function AttendanceScreen() {
   const { status, members, dashboard, checkedInTodayMemberIds, checkingInMemberId, error, refresh, simulateCheckIn } = useGymOwner();
   const [search, setSearch] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
+
+  const handleExportAttendanceCsv = async () => {
+    if (!dashboard) return;
+    setIsExporting(true);
+    try {
+      const headers = ['Record ID', 'Member ID', 'Member Name', 'Checked-In At', 'Source'];
+      const rows = dashboard.recentAttendance.map((rec) => [
+        rec.id,
+        rec.memberId,
+        membersById.get(rec.memberId)?.fullName ?? 'Unknown',
+        rec.checkedInAt,
+        rec.source,
+      ]);
+      await exportCsvFile('aurasync_attendance.csv', headers, rows);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const filteredMembers = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -43,7 +64,19 @@ export default function AttendanceScreen() {
           <Text style={styles.eyebrow}>GYM INTELLIGENCE DEMO</Text>
           <Text style={styles.title}>Attendance</Text>
         </View>
-        <StatusBadge label={`${dashboard.todayCheckIns} TODAY`} tone="good" />
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Export Attendance CSV"
+            onPress={() => void handleExportAttendanceCsv()}
+            disabled={isExporting}
+            style={styles.exportBtn}
+          >
+            <Ionicons name="download-outline" size={15} color={colors.cyan} />
+            <Text style={styles.exportBtnText}>{isExporting ? '...' : 'CSV'}</Text>
+          </Pressable>
+          <StatusBadge label={`${dashboard.todayCheckIns} TODAY`} tone="good" />
+        </View>
       </View>
 
       <GlassCard style={styles.summaryCard}>
@@ -121,6 +154,19 @@ const styles = StyleSheet.create({
   content: { gap: spacing.lg },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerCopy: { flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(0, 229, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.3)',
+  },
+  exportBtnText: { color: colors.cyan, fontSize: 11, fontWeight: '800' },
   eyebrow: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.7 },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700', marginTop: 2 },
   summaryCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

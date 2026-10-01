@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { MembershipStateBadge, PaymentStateBadge } from '@/components/gym/MembershipBadge';
@@ -18,7 +18,8 @@ import {
 import { formatGymDateTime } from '@/domain/gym/format';
 import { useGymOwner } from '@/state/GymOwnerProvider';
 import type { GymMember, GymPaymentRecord } from '@/types/gym';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
+import { exportCsvFile } from '@/utils/csvExport';
 
 export default function PaymentsScreen() {
   const { status, members, payments, dashboard, error, refresh } = useGymOwner();
@@ -40,6 +41,27 @@ export default function PaymentsScreen() {
         .slice(0, 12),
     [payments],
   );
+
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPaymentsCsv = async () => {
+    setIsExporting(true);
+    try {
+      const headers = ['Payment ID', 'Member ID', 'Member Name', 'Amount (USD)', 'Paid At', 'Method', 'Notes'];
+      const rows = payments.map((p) => [
+        p.id,
+        p.memberId,
+        membersById.get(p.memberId)?.fullName ?? 'Unknown',
+        p.amount,
+        p.paidAt,
+        PAYMENT_METHOD_LABELS[p.method] ?? p.method,
+        p.note ?? '',
+      ]);
+      await exportCsvFile('aurasync_payments.csv', headers, rows);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   if (status === 'error') {
     return <Screen scroll={false}><ErrorState message={error ?? 'Please try again.'} onRetry={() => void refresh()} /></Screen>;
@@ -64,7 +86,19 @@ export default function PaymentsScreen() {
           <Text style={styles.eyebrow}>GYM INTELLIGENCE DEMO</Text>
           <Text style={styles.title}>Payments & Memberships</Text>
         </View>
-        <StatusBadge label={`${dashboard.membersWithOutstandingPayments} DUE`} tone={dashboard.membersWithOutstandingPayments > 0 ? 'cyan' : 'good'} />
+        <View style={styles.headerActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Export Payments CSV"
+            onPress={() => void handleExportPaymentsCsv()}
+            disabled={isExporting}
+            style={styles.exportBtn}
+          >
+            <Ionicons name="download-outline" size={15} color={colors.cyan} />
+            <Text style={styles.exportBtnText}>{isExporting ? '...' : 'CSV'}</Text>
+          </Pressable>
+          <StatusBadge label={`${dashboard.membersWithOutstandingPayments} DUE`} tone={dashboard.membersWithOutstandingPayments > 0 ? 'cyan' : 'good'} />
+        </View>
       </View>
 
       <FadeIn>
@@ -175,6 +209,19 @@ const styles = StyleSheet.create({
   loadingContent: { gap: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerCopy: { flex: 1 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  exportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(0, 229, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.3)',
+  },
+  exportBtnText: { color: colors.cyan, fontSize: 11, fontWeight: '800' },
   eyebrow: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.7 },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700', marginTop: 2 },
   summaryCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

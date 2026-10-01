@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { LoadingState, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
@@ -33,6 +33,7 @@ export default function ActiveWorkoutScreen() {
   const [completedSets, setCompletedSets] = useState<number[]>([]);
   const [isFinishing, setIsFinishing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [restSeconds, setRestSeconds] = useState(0);
   const [customPlan, setCustomPlan] = useState<typeof plan>(null);
   const finishedRef = useRef(false);
 
@@ -58,6 +59,12 @@ export default function ActiveWorkoutScreen() {
     const timeout = setTimeout(() => setCompletedSets(activePlan.exercises.map(() => 0)), 0);
     return () => clearTimeout(timeout);
   }, [activePlan]);
+
+  useEffect(() => {
+    if (restSeconds <= 0 || isFinishing) return;
+    const timer = setInterval(() => setRestSeconds(current => Math.max(0, current - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [restSeconds, isFinishing]);
 
   useEffect(() => {
     if (!activePlan || isPaused || isFinishing) {
@@ -100,10 +107,14 @@ export default function ActiveWorkoutScreen() {
   const allSetsDone = totals.completedTotal >= totals.totalSets;
 
   const handleCompleteSet = () => {
-    if (setsRemaining <= 0) {
-      return;
-    }
+    if (setsRemaining <= 0) return;
     setCompletedSets((current) => current.map((count, index) => (index === exerciseIndex ? count + 1 : count)));
+    setRestSeconds(60);
+  };
+
+  const handleSkipSet = () => {
+    if (setsRemaining <= 0) return;
+    setCompletedSets((current) => current.map((count, index) => (index === exerciseIndex ? currentExercise.sets : count)));
   };
 
   const handleNextExercise = () => {
@@ -113,9 +124,19 @@ export default function ActiveWorkoutScreen() {
   };
 
   const handleFinish = async () => {
-    if (finishedRef.current || !user) {
+    if (finishedRef.current || !user) return;
+    if (!allSetsDone) {
+      Alert.alert('Finish workout?', 'This session will be saved as Partial with the sets you completed.', [
+        { text: 'Keep Training', style: 'cancel' },
+        { text: 'Finish', style: 'destructive', onPress: () => void persistWorkout() },
+      ]);
       return;
     }
+    await persistWorkout();
+  };
+
+  const persistWorkout = async () => {
+    if (finishedRef.current || !user) return;
     finishedRef.current = true;
     setIsFinishing(true);
 
@@ -136,8 +157,9 @@ export default function ActiveWorkoutScreen() {
         status,
       });
     } catch {
-      // History remains viewable; surface nothing blocking here.
+      // The local fallback still keeps the session if Supabase is unavailable.
     } finally {
+      await AsyncStorage.removeItem('aurasync_active_custom_workout');
       router.replace('/history');
     }
   };
@@ -162,6 +184,7 @@ export default function ActiveWorkoutScreen() {
       <GlassCard style={styles.timerCard}>
         <Text style={styles.timer}>{formatClock(elapsedSeconds)}</Text>
         <Text style={styles.timerLabel}>{isPaused ? 'PAUSED' : 'ELAPSED TIME'}</Text>
+        {restSeconds > 0 ? <Text style={styles.rest}>REST · {formatClock(restSeconds)}</Text> : null}
         <Text style={styles.progress}>
           {totals.completedTotal}/{totals.totalSets} sets completed
         </Text>
@@ -208,6 +231,9 @@ export default function ActiveWorkoutScreen() {
 
       <View style={styles.actions}>
         <PrimaryButton label={setsRemaining > 0 ? 'Complete Set' : 'Set Complete'} onPress={handleCompleteSet} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Skip remaining sets" onPress={handleSkipSet} style={styles.skipButton}>
+          <Text style={styles.skipLabel}>Skip Remaining Sets</Text>
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Next exercise"
@@ -247,6 +273,7 @@ const styles = StyleSheet.create({
   timerCard: { alignItems: 'center', gap: 6, paddingVertical: spacing.lg },
   timer: { color: colors.white, fontSize: 52, fontWeight: '800', letterSpacing: 2 },
   timerLabel: { color: colors.muted, fontSize: typography.label, fontWeight: '800', letterSpacing: 1 },
+  rest: { color: colors.cyan, fontSize: typography.caption, fontWeight: '800', marginTop: 4 },
   progress: { color: colors.silver, fontSize: typography.caption, marginTop: spacing.xs },
   progressBar: { width: '100%', height: 6, borderRadius: radii.pill, backgroundColor: 'rgba(166, 178, 184, 0.15)', overflow: 'hidden', marginTop: 4 },
   progressFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.cyan },
@@ -265,6 +292,8 @@ const styles = StyleSheet.create({
   nextLabel: { color: colors.muted, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.6 },
   nextName: { color: colors.silver, fontSize: typography.body, fontWeight: '600' },
   actions: { gap: spacing.sm },
+  skipButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  skipLabel: { color: colors.muted, fontSize: typography.caption, fontWeight: '700' },
   secondaryButton: {
     minHeight: 50,
     borderRadius: radii.md,

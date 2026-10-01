@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -23,6 +24,10 @@ export default function WorkoutBuilderScreen() {
       ? current.filter(x => x.id !== id)
       : [...current, { id, name: exercise.name, category: exercise.category, sets: exercise.defaultSets, reps: exercise.defaultReps }]);
   };
+  const start = async () => {
+    await AsyncStorage.setItem('aurasync_active_custom_workout', JSON.stringify(selected));
+    router.push('/active-workout');
+  };
   const update = (id: string, key: 'sets'|'reps', delta: number) =>
     setSelected(current => current.map(x => x.id === id ? { ...x, [key]: Math.max(1, Math.min(30, x[key] + delta)) } : x));
 
@@ -44,7 +49,7 @@ export default function WorkoutBuilderScreen() {
       </Pressable>})}
       {selected.length>0 && <GlassCard style={styles.configure}><Text style={styles.section}>YOUR WORKOUT</Text>{selected.map(x=><View key={x.id} style={styles.row}><View style={styles.rowCopy}><Text style={styles.rowName}>{x.name}</Text><Text style={styles.rowCategory}>{x.category}</Text></View><View style={styles.controls}><Pressable onPress={()=>update(x.id,'sets',-1)} style={styles.control}><Text style={styles.controlText}>−</Text></Pressable><Text style={styles.value}>{x.sets}S</Text><Pressable onPress={()=>update(x.id,'sets',1)} style={styles.control}><Text style={styles.controlText}>+</Text></Pressable><Pressable onPress={()=>update(x.id,'reps',-1)} style={styles.control}><Text style={styles.controlText}>−</Text></Pressable><Text style={styles.value}>{x.reps}R</Text><Pressable onPress={()=>update(x.id,'reps',1)} style={styles.control}><Text style={styles.controlText}>+</Text></Pressable></View></View>)}</GlassCard>}
     </ScrollView>
-    <PrimaryButton label={selected.length ? `START WORKOUT · ${selected.length} EXERCISES` : 'SELECT EXERCISES TO START'} disabled={!selected.length} onPress={()=>router.push('/active-workout')} />
+    <PrimaryButton label={selected.length ? `START WORKOUT · ${selected.length} EXERCISES` : 'SELECT EXERCISES TO START'} disabled={!selected.length} onPress={() => void start()} />
   </Screen>;
 }
 const styles=StyleSheet.create({

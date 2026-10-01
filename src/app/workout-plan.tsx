@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
@@ -14,6 +15,8 @@ function intensityTone(intensity: string): 'cyan' | 'good' | 'muted' {
   if (intensity.toLowerCase() === 'moderate') return 'good';
   return 'muted';
 }
+
+const ACTIVE_PLAN_KEY = 'aurasync_active_ai_workout';
 
 export default function WorkoutPlanScreen() {
   const { profile } = useAuth();
@@ -93,7 +96,13 @@ export default function WorkoutPlanScreen() {
             ))}
           </View>
 
-          <PrimaryButton label="START WORKOUT" onPress={() => router.push('/active-workout')} />
+          <PrimaryButton
+            label="START WORKOUT"
+            onPress={async () => {
+              await AsyncStorage.setItem(ACTIVE_PLAN_KEY, JSON.stringify(plan));
+              router.push('/active-workout');
+            }}
+          />
           <Text style={styles.powered}>Powered by AuraSync AI</Text>
         </View>
       )}

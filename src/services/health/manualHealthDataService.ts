@@ -55,13 +55,21 @@ export async function saveManualHealthEntry(userId: string, entry: ManualHealthE
   await AsyncStorage.setItem(keyFor(userId), JSON.stringify(next));
 }
 
+const DASHBOARD_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+export function isWithinDashboardWindow(capturedAt: string, now = Date.now()): boolean {
+  const timestamp = new Date(capturedAt).getTime();
+  return Number.isFinite(timestamp) && now - timestamp >= 0 && now - timestamp < DASHBOARD_WINDOW_MS;
+}
+
 export async function getLatestManualSnapshot(
   userId: string,
   memberName: string,
   fitnessGoal: string,
 ): Promise<HealthSnapshot | null> {
   const entries = await getManualHealthEntries(userId);
-  return entries[0] ? toSnapshot(entries[0], memberName, fitnessGoal) : null;
+  const currentEntry = entries.find((entry) => isWithinDashboardWindow(entry.capturedAt));
+  return currentEntry ? toSnapshot(currentEntry, memberName, fitnessGoal) : null;
 }
 
 export function getMetricValue(entry: ManualHealthEntry, metric: HealthMetricId): number {

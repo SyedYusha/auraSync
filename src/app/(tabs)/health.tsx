@@ -5,19 +5,21 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, LoadingState, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
 import { useHealthData } from '@/state/HealthDataProvider';
+import { router } from 'expo-router';
+import { PrimaryButton } from '@/components/ui/Feedback';
 import { useRecovery } from '@/state/useRecovery';
 import { colors, spacing, typography } from '@/theme';
 
 export default function HealthScreen() {
-  const { status, snapshot, error, refresh } = useHealthData();
+  const { status, snapshot, error, refresh, isDemoMode, activityHistory } = useHealthData();
 
   if (status === 'loading' || !snapshot) return <Screen scroll={false}><LoadingState label="Preparing your synthetic health overview…" /></Screen>;
   if (status === 'error') return <Screen scroll={false}><ErrorState message={error ?? 'Please try again.'} onRetry={() => void refresh()} /></Screen>;
 
-  return <HealthContent snapshot={snapshot} onRefresh={() => void refresh()} />;
+  return <HealthContent snapshot={snapshot} onRefresh={() => void refresh()} isDemoMode={isDemoMode} activityHistory={activityHistory} />;
 }
 
-function HealthContent({ snapshot, onRefresh }: { readonly snapshot: NonNullable<ReturnType<typeof useHealthData>['snapshot']>; readonly onRefresh: () => void }) {
+function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { readonly snapshot: NonNullable<ReturnType<typeof useHealthData>['snapshot']>; readonly onRefresh: () => void; readonly isDemoMode: boolean; readonly activityHistory: readonly { capturedAt: string; hrv: number; sleep: number; sleepScore: number; stress: number; trainingLoad: number }[] }) {
   const recovery = useRecovery(snapshot);
   const metrics = Object.values(snapshot.metrics);
 
@@ -26,9 +28,9 @@ function HealthContent({ snapshot, onRefresh }: { readonly snapshot: NonNullable
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Health Metrics</Text>
-          <Text style={styles.subtitle}>Your synthetic readiness signals</Text>
+          <Text style={styles.subtitle}>{isDemoMode ? "Demo readiness signals" : "Your personal readiness signals"}</Text>
         </View>
-        <StatusBadge label="DEMO" tone="cyan" />
+        <StatusBadge label={isDemoMode ? "DEMO" : snapshot.sourceId === "manual" ? "MANUAL" : "LIVE"} tone="cyan" />
       </View>
       <GlassCard style={styles.recoveryOverview}>
         <Text style={styles.overviewLabel}>RECOVERY</Text>
@@ -42,9 +44,15 @@ function HealthContent({ snapshot, onRefresh }: { readonly snapshot: NonNullable
       </GlassCard>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>METRICS</Text>
-        <Text style={styles.description}>Demo data only — no wearable or health platform is connected.</Text>
+        <Text style={styles.description}>{isDemoMode ? "Synthetic demo data for presentation." : snapshot.sourceId === "manual" ? "Self-entered data. Connect a wearable later for automatic syncing." : "No health source connected yet."}</Text>
       </View>
       <MetricGrid metrics={metrics} />
+      {!isDemoMode ? <PrimaryButton label="UPDATE HEALTH DATA" onPress={() => router.push("/manual-health")} /> : null}
+      {activityHistory.length > 0 ? <GlassCard style={styles.trendCard}>
+        <Text style={styles.sectionTitle}>RECENT TREND</Text>
+        <Text style={styles.description}>Last {Math.min(activityHistory.length, 7)} entries · newest first</Text>
+        {activityHistory.slice(0, 7).reverse().map((entry) => <View key={entry.capturedAt} style={styles.trendRow}><Text style={styles.trendDate}>{new Date(entry.capturedAt).toLocaleDateString()}</Text><Text style={styles.trendValue}>HRV {entry.hrv} ms</Text><Text style={styles.trendValue}>Sleep {entry.sleep.toFixed(1)}h</Text><Text style={styles.trendValue}>Stress {entry.stress}</Text></View>)}
+      </GlassCard> : null}
     </Screen>
   );
 }
@@ -62,4 +70,8 @@ const styles = StyleSheet.create({
   section: { gap: 5 },
   sectionTitle: { color: colors.white, fontSize: typography.title, fontWeight: '700' },
   description: { color: colors.muted, fontSize: typography.caption, lineHeight: 18 },
+  trendCard: { gap: spacing.sm },
+  trendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+  trendDate: { color: colors.silver, fontSize: 11, width: 82 },
+  trendValue: { color: colors.white, fontSize: 11, fontWeight: '700' },
 });

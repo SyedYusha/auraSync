@@ -157,6 +157,17 @@ export default function ActiveWorkoutScreen() {
     const status: WorkoutStatus = allSetsDone ? 'Completed' : 'Partial';
 
     try {
+      const performedExercises = activePlan.exercises
+        .map((exercise, index) => ({
+          ...exercise,
+          sets: completedSets[index] ?? 0,
+        }))
+        .filter((exercise) => exercise.sets > 0)
+        .map((exercise) => ({
+          ...exercise,
+          reps: exercise.reps,
+        }));
+
       await workoutService.saveWorkout(user.id, {
         id: `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
         date: new Date().toISOString(),
@@ -165,7 +176,7 @@ export default function ActiveWorkoutScreen() {
         intensity: activePlan.intensity,
         focus: activePlan.focus,
         calories: Math.round(durationMin * multiplier),
-        exercises: activePlan.exercises,
+        exercises: performedExercises,
         status,
       });
     } catch {

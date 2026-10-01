@@ -68,12 +68,13 @@ async function callProvider(config: ProviderConfig, input: GenerateJSONInput): P
     body: JSON.stringify({
       model: config.model,
       messages: [
-        { role: 'system', content: input.system },
-        { role: 'user', content: input.user },
+        { role: 'system', content: input.system.slice(0, MAX_PROMPT_CHARS) },
+        { role: 'user', content: input.user.slice(0, MAX_PROMPT_CHARS) },
       ],
       temperature: input.temperature ?? 0.4,
       max_tokens: input.maxTokens ?? 800,
     }),
+    signal: controller.signal,
   });
 
   if (!response.ok) {

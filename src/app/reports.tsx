@@ -1,4 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Share, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { HealthTrendChart } from '@/components/health/HealthTrendChart';
 import { ErrorState, LoadingState, OutlineButton, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
@@ -10,13 +12,10 @@ import { workoutService } from '@/services/workouts/workoutService';
 import type { ManualHealthEntry } from '@/services/health/manualHealthDataService';
 import type { WorkoutRecord } from '@/types/member';
 import { colors, spacing, typography } from '@/theme';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 
 type Range = 7 | 30;
 
-const average = (values: readonly number[]) =>
-  values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+const average = (values: readonly number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
 
 const trend = (values: readonly number[]) => {
   if (values.length < 2) return 'No baseline yet';
@@ -34,12 +33,42 @@ function inRange(date: string, range: Range) {
   return Number.isFinite(time) && Date.now() - time <= range * 24 * 60 * 60 * 1000;
 }
 
+function buildReportText(range: Range, rows: readonly ManualHealthEntry[], workouts: readonly WorkoutRecord[], demo: boolean) {
+  const avgHrv = Math.round(average(rows.map((item) => item.hrv)));
+  const avgSleep = average(rows.map((item) => item.sleep)).toFixed(1);
+  const avgStress = Math.round(average(rows.map((item) => item.stress)));
+  const avgLoad = Math.round(average(rows.map((item) => item.trainingLoad)));
+  return [
+    'AURASYNC+ FITNESS REPORT',
+    `Period: Last ${range} days`,
+    `Data source: ${demo ? 'Demo data' : 'Personal data'}`,
+    '',
+    'HEALTH SNAPSHOT',
+    rows.length ? `Average HRV: ${avgHrv} ms` : 'Average HRV: —',
+    rows.length ? `Average Sleep: ${avgSleep} h` : 'Average Sleep: —',
+    rows.length ? `Average Stress: ${avgStress}/100` : 'Average Stress: —',
+    rows.length ? `Average Training Load: ${avgLoad}/100` : 'Average Training Load: —',
+    '',
+    'TRENDS',
+    rows.length ? `HRV: ${trend(rows.map((item) => item.hrv))}` : 'HRV: No data',
+    rows.length ? `Sleep: ${trend(rows.map((item) => item.sleep))}` : 'Sleep: No data',
+    rows.length ? `Stress: ${trend(rows.map((item) => item.stress))}` : 'Stress: No data',
+    rows.length ? `Training Load: ${trend(rows.map((item) => item.trainingLoad))}` : 'Training Load: No data',
+    '',
+    'TRAINING',
+    `Completed workouts: ${workouts.length}`,
+    '',
+    'AuraSync+ fitness and wellness intelligence. Not medical advice or a diagnosis.',
+  ].join('\n');
+}
+
 export default function ReportsScreen() {
   const { user } = useAuth();
   const { status: healthStatus, error: healthError, activityHistory, isDemoMode, refresh } = useHealthData();
   const [range, setRange] = useState<Range>(7);
   const [workouts, setWorkouts] = useState<readonly WorkoutRecord[]>([]);
-  const [workoutStatus, setWorkoutStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [workoutStatus, setWorkoutStatus] = useState<'loading' | 'ready'>('loading');
+  const [generatedReport, setGeneratedReport] = useState<string | null>(null);
 
   const loadWorkouts = useCallback(async () => {
     if (!user) {
@@ -50,15 +79,14 @@ export default function ReportsScreen() {
     setWorkoutStatus('loading');
     try {
       setWorkouts(await workoutService.getWorkouts(user.id));
-      setWorkoutStatus('ready');
     } catch {
-      setWorkoutStatus('error');
+      setWorkouts([]);
+    } finally {
+      setWorkoutStatus('ready');
     }
   }, [user]);
 
-  useEffect(() => {
-    void loadWorkouts();
-  }, [loadWorkouts]);
+  useEffect(() => { void loadWorkouts(); }, [loadWorkouts]);
 
   const healthRows = useMemo<readonly ManualHealthEntry[]>(() => {
     if (isDemoMode) {
@@ -79,10 +107,18 @@ export default function ReportsScreen() {
     return activityHistory.filter((entry) => inRange(entry.capturedAt, range));
   }, [activityHistory, isDemoMode, range]);
 
-  const periodWorkouts = useMemo(
-    () => workouts.filter((workout) => inRange(workout.date, range)),
-    [range, workouts],
-  );
+  const periodWorkouts = useMemo(() => workouts.filter((workout) => inRange(workout.date, range)), [range, workouts]);
+  const hasHealthData = healthRows.length > 0;
+  const chartData = [...healthRows].reverse();
+
+  const generateReport = () => {
+    setGeneratedReport(buildReportText(range, healthRows, periodWorkouts, isDemoMode));
+  };
+
+  const shareReport = async () => {
+    const text = generatedReport ?? buildReportText(range, healthRows, periodWorkouts, isDemoMode);
+    await Share.share({ title: 'AuraSync+ Fitness Report', message: text });
+  };
 
   if (healthStatus === 'loading' || workoutStatus === 'loading') {
     return <Screen scroll={false}><LoadingState label="Building your report…" /></Screen>;
@@ -92,40 +128,36 @@ export default function ReportsScreen() {
     return <Screen scroll={false}><ErrorState message={healthError ?? 'Health report could not be loaded.'} onRetry={() => void refresh()} /></Screen>;
   }
 
-  const hasHealthData = healthRows.length > 0;
-  const chartData = [...healthRows].reverse();
-
   return (
     <Screen onRefresh={() => { void refresh(); void loadWorkouts(); }}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>PERSONAL INTELLIGENCE</Text>
           <Text style={styles.title}>Reports</Text>
-          <Text style={styles.subtitle}>See how your health and training signals change over time.</Text>
+          <Text style={styles.subtitle}>Track trends and generate a shareable fitness report.</Text>
         </View>
         <StatusBadge label={isDemoMode ? 'DEMO' : hasHealthData ? 'LIVE DATA' : 'WAITING'} tone="cyan" />
       </View>
 
       <View style={styles.rangeRow}>
-        <View style={styles.rangeItem}>
-          {range === 7 ? <PrimaryButton label="7 DAYS" onPress={() => setRange(7)} /> : <OutlineButton label="7 DAYS" onPress={() => setRange(7)} />}
-        </View>
-        <View style={styles.rangeItem}>
-          {range === 30 ? <PrimaryButton label="30 DAYS" onPress={() => setRange(30)} /> : <OutlineButton label="30 DAYS" onPress={() => setRange(30)} />}
-        </View>
+        <View style={styles.rangeItem}>{range === 7 ? <PrimaryButton label="7 DAYS" onPress={() => setRange(7)} /> : <OutlineButton label="7 DAYS" onPress={() => setRange(7)} />}</View>
+        <View style={styles.rangeItem}>{range === 30 ? <PrimaryButton label="30 DAYS" onPress={() => setRange(30)} /> : <OutlineButton label="30 DAYS" onPress={() => setRange(30)} />}</View>
       </View>
+
+      <GlassCard style={styles.generatorCard}>
+        <Text style={styles.sectionTitle}>REPORT GENERATOR</Text>
+        <Text style={styles.description}>Create an on-demand summary from the selected period. Personal reports use only data actually recorded in your account.</Text>
+        <PrimaryButton label="GENERATE REPORT" onPress={generateReport} />
+        {generatedReport ? <OutlineButton label="SHARE REPORT" onPress={() => void shareReport()} /> : null}
+      </GlassCard>
 
       {!hasHealthData ? (
         <GlassCard style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>Your report starts with real data</Text>
-          <Text style={styles.description}>
-            Add today's health data or connect a supported source. Until then, AuraSync+ will not manufacture biometric history.
-          </Text>
+          <Text style={styles.description}>Add today's health data or connect a supported source. AuraSync+ will not manufacture biometric history.</Text>
           <PrimaryButton label="ADD HEALTH DATA" onPress={() => router.push('/manual-health')} />
         </GlassCard>
-      ) : null}
-
-      {hasHealthData ? (
+      ) : (
         <>
           <GlassCard style={styles.summaryCard}>
             <Text style={styles.sectionTitle}>{range}-DAY SNAPSHOT</Text>
@@ -154,58 +186,56 @@ export default function ReportsScreen() {
             <TrendRow label="Active Minutes" value={trend(healthRows.map((item) => item.activeMinutes))} />
           </GlassCard>
         </>
+      )}
+
+      {generatedReport ? (
+        <GlassCard style={styles.generatedCard}>
+          <View style={styles.generatedHeader}>
+            <View style={styles.headerCopy}>
+              <Text style={styles.sectionTitle}>GENERATED REPORT</Text>
+              <Text style={styles.description}>Ready to share</Text>
+            </View>
+            <StatusBadge label="READY" tone="good" />
+          </View>
+          <Text selectable style={styles.reportText}>{generatedReport}</Text>
+          <OutlineButton label="SHARE REPORT" onPress={() => void shareReport()} />
+        </GlassCard>
       ) : null}
 
       <GlassCard style={styles.trainingCard}>
         <View style={styles.trainingHeader}>
-          <View>
+          <View style={styles.headerCopy}>
             <Text style={styles.sectionTitle}>TRAINING HISTORY</Text>
             <Text style={styles.description}>Completed workouts in the selected period.</Text>
           </View>
           <Text style={styles.workoutCount}>{periodWorkouts.length}</Text>
         </View>
-        {periodWorkouts.length === 0 ? (
-          <Text style={styles.description}>No completed workouts yet. Your training history will build automatically after you finish a workout.</Text>
-        ) : (
-          periodWorkouts.slice(0, 6).map((workout) => (
-            <View key={workout.id} style={styles.workoutRow}>
-              <View style={styles.workoutCopy}>
-                <Text style={styles.workoutName}>{workout.focus || workout.type}</Text>
-                <Text style={styles.description}>{new Date(workout.date).toLocaleDateString()} · {workout.durationMin} min · {workout.intensity}</Text>
-              </View>
-              <Text style={styles.workoutCalories}>{workout.calories} kcal</Text>
+        {periodWorkouts.length === 0 ? <Text style={styles.description}>No completed workouts yet.</Text> : periodWorkouts.slice(0, 6).map((workout) => (
+          <View key={workout.id} style={styles.workoutRow}>
+            <View style={styles.workoutCopy}>
+              <Text style={styles.workoutName}>{workout.focus || workout.type}</Text>
+              <Text style={styles.description}>{new Date(workout.date).toLocaleDateString()} · {workout.durationMin} min · {workout.intensity}</Text>
             </View>
-          ))
-        )}
+            <Text style={styles.workoutCalories}>{workout.calories} kcal</Text>
+          </View>
+        ))}
         <OutlineButton label="OPEN FULL HISTORY" onPress={() => router.push('/history')} />
       </GlassCard>
 
       <GlassCard style={styles.disclaimerCard}>
         <Text style={styles.disclaimerTitle}>RESPONSIBLE FITNESS INTELLIGENCE</Text>
-        <Text style={styles.description}>
-          These reports summarize fitness and wellness signals. They are not medical measurements, diagnoses, or treatment recommendations. Trends require enough real data to become meaningful.
-        </Text>
+        <Text style={styles.description}>These reports summarize fitness and wellness signals. They are not medical measurements, diagnoses, or treatment recommendations.</Text>
       </GlassCard>
     </Screen>
   );
 }
 
 function Stat({ label, value }: { readonly label: string; readonly value: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
-    </View>
-  );
+  return <View style={styles.stat}><Text style={styles.statLabel}>{label}</Text><Text style={styles.statValue}>{value}</Text></View>;
 }
 
 function TrendRow({ label, value }: { readonly label: string; readonly value: string }) {
-  return (
-    <View style={styles.trendRow}>
-      <Text style={styles.trendLabel}>{label}</Text>
-      <Text style={styles.trendValue}>{value}</Text>
-    </View>
-  );
+  return <View style={styles.trendRow}><Text style={styles.trendLabel}>{label}</Text><Text style={styles.trendValue}>{value}</Text></View>;
 }
 
 const styles = StyleSheet.create({
@@ -216,6 +246,7 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.silver, fontSize: typography.body, lineHeight: 20 },
   rangeRow: { flexDirection: 'row', gap: spacing.sm },
   rangeItem: { flex: 1 },
+  generatorCard: { gap: spacing.md },
   summaryCard: { gap: spacing.md },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   stat: { width: '47%', minHeight: 72, justifyContent: 'center', padding: spacing.md, borderRadius: 14, backgroundColor: colors.card },
@@ -235,6 +266,9 @@ const styles = StyleSheet.create({
   workoutCalories: { color: colors.silver, fontSize: typography.caption, fontWeight: '700' },
   emptyCard: { gap: spacing.md },
   emptyTitle: { color: colors.white, fontSize: typography.h2, fontWeight: '700' },
+  generatedCard: { gap: spacing.md },
+  generatedHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  reportText: { color: colors.silver, fontSize: typography.caption, lineHeight: 20, fontFamily: 'monospace' },
   disclaimerCard: { gap: spacing.xs, marginBottom: spacing.xl },
   disclaimerTitle: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.7 },
   description: { color: colors.muted, fontSize: typography.caption, lineHeight: 18 },

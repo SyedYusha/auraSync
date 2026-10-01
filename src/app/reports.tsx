@@ -1,5 +1,7 @@
-import { Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { HealthTrendChart } from '@/components/health/HealthTrendChart';
@@ -62,6 +64,100 @@ function buildReportText(range: Range, rows: readonly ManualHealthEntry[], worko
   ].join('\n');
 }
 
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], workouts: readonly WorkoutRecord[], demo: boolean) {
+  const avgHrv = Math.round(average(rows.map((item) => item.hrv)));
+  const avgSleep = average(rows.map((item) => item.sleep)).toFixed(1);
+  const avgStress = Math.round(average(rows.map((item) => item.stress)));
+  const avgLoad = Math.round(average(rows.map((item) => item.trainingLoad)));
+  const source = demo ? 'Demo data' : 'Personal data';
+  const trendRows = [
+    ['HRV', rows.length ? trend(rows.map((item) => item.hrv)) : 'No data'],
+    ['Sleep', rows.length ? trend(rows.map((item) => item.sleep)) : 'No data'],
+    ['Stress', rows.length ? trend(rows.map((item) => item.stress)) : 'No data'],
+    ['Training Load', rows.length ? trend(rows.map((item) => item.trainingLoad)) : 'No data'],
+  ];
+  const workoutRows = workouts.slice(0, 10).map((workout) => `
+    <tr>
+      <td>${escapeHtml(workout.focus || workout.type)}</td>
+      <td>${escapeHtml(new Date(workout.date).toLocaleDateString())}</td>
+      <td>${workout.durationMin} min</td>
+      <td>${escapeHtml(workout.intensity)}</td>
+    </tr>`).join('');
+
+  return `<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  @page { size: A4; margin: 18mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #030708; color: #F5FBFC; }
+  .page { padding: 8px; }
+  .brand { border-bottom: 1px solid #0B3A3D; padding-bottom: 18px; margin-bottom: 24px; }
+  .logo { font-size: 28px; font-weight: 800; letter-spacing: 1px; color: #00E5FF; }
+  .tagline { margin-top: 5px; color: #A9B8BA; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; }
+  .meta { margin-top: 18px; color: #A9B8BA; font-size: 12px; }
+  h1 { font-size: 24px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: #00E5FF; letter-spacing: 1.2px; margin: 26px 0 12px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { border: 1px solid #0B3A3D; background: #062326; border-radius: 12px; padding: 14px; }
+  .label { color: #829294; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .value { color: #FFFFFF; font-size: 22px; font-weight: 700; margin-top: 5px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th, td { text-align: left; padding: 9px 7px; border-bottom: 1px solid #173A3D; }
+  th { color: #829294; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+  td { color: #D6E0E1; }
+  .footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #0B3A3D; color: #829294; font-size: 9px; line-height: 1.5; }
+  .accent { color: #00E5FF; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="brand">
+    <div class="logo">AURASYNC+</div>
+    <div class="tagline">Understand Your Body. Train Smarter.</div>
+    <div class="meta">Fitness Intelligence Report · Last ${range} days · ${escapeHtml(source)}</div>
+  </div>
+  <h1>Personal Fitness Intelligence</h1>
+  <div class="meta">Generated ${escapeHtml(new Date().toLocaleString())}</div>
+
+  <h2>HEALTH SNAPSHOT</h2>
+  <div class="grid">
+    <div class="card"><div class="label">Average HRV</div><div class="value">${rows.length ? avgHrv + ' ms' : '—'}</div></div>
+    <div class="card"><div class="label">Average Sleep</div><div class="value">${rows.length ? avgSleep + ' h' : '—'}</div></div>
+    <div class="card"><div class="label">Average Stress</div><div class="value">${rows.length ? avgStress + '/100' : '—'}</div></div>
+    <div class="card"><div class="label">Average Training Load</div><div class="value">${rows.length ? avgLoad + '/100' : '—'}</div></div>
+  </div>
+
+  <h2>TREND SUMMARY</h2>
+  <table><thead><tr><th>Signal</th><th>Trend</th></tr></thead><tbody>
+    ${trendRows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td class="accent">${escapeHtml(value)}</td></tr>`).join('')}
+  </tbody></table>
+
+  <h2>TRAINING HISTORY</h2>
+  <table><thead><tr><th>Workout</th><th>Date</th><th>Duration</th><th>Intensity</th></tr></thead><tbody>
+    ${workoutRows || '<tr><td colspan="4">No completed workouts in this period.</td></tr>'}
+  </tbody></table>
+
+  <div class="footer">
+    <strong class="accent">AuraSync+</strong> · The Unified Biometric &amp; Gym Intelligence Ecosystem.<br>
+    This report summarizes fitness and wellness signals. It is not medical advice, a medical measurement, diagnosis, or treatment recommendation.
+  </div>
+</div>
+</body>
+</html>`;
+}
+
 export default function ReportsScreen() {
   const { user } = useAuth();
   const { status: healthStatus, error: healthError, activityHistory, isDemoMode, refresh } = useHealthData();
@@ -120,6 +216,24 @@ export default function ReportsScreen() {
     await Share.share({ title: 'AuraSync+ Fitness Report', message: text });
   };
 
+  const generatePdf = async () => {
+    const html = buildReportHtml(range, healthRows, periodWorkouts, isDemoMode);
+    if (Platform.OS === 'web') {
+      await Print.printAsync({ html });
+      return;
+    }
+    const { uri } = await Print.printToFileAsync({ html });
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(uri, {
+        dialogTitle: 'Share AuraSync+ PDF Report',
+        mimeType: 'application/pdf',
+        UTI: 'com.adobe.pdf',
+      });
+    } else {
+      await Share.share({ title: 'AuraSync+ PDF Report', message: uri });
+    }
+  };
+
   if (healthStatus === 'loading' || workoutStatus === 'loading') {
     return <Screen scroll={false}><LoadingState label="Building your report…" /></Screen>;
   }
@@ -148,6 +262,7 @@ export default function ReportsScreen() {
         <Text style={styles.sectionTitle}>REPORT GENERATOR</Text>
         <Text style={styles.description}>Create an on-demand summary from the selected period. Personal reports use only data actually recorded in your account.</Text>
         <PrimaryButton label="GENERATE REPORT" onPress={generateReport} />
+        <OutlineButton label="GENERATE BRANDED PDF" onPress={() => void generatePdf()} />
         {generatedReport ? <OutlineButton label="SHARE REPORT" onPress={() => void shareReport()} /> : null}
       </GlassCard>
 

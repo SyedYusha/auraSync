@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/ui/Feedback';
@@ -12,7 +13,7 @@ export default function WorkoutPlanBuilderScreen(){
  const [plan,setPlan]=useState(()=>DAYS.map((day,index)=>({day,focus:index<4?FOCUSES[index]:'Recovery / Rest'})));
  const cycle=(index:number)=>setPlan(current=>current.map((item,i)=>i===index?{...item,focus:FOCUSES[(FOCUSES.indexOf(item.focus as typeof FOCUSES[number])+1)%FOCUSES.length]}:item));
  const save=async()=>{await AsyncStorage.setItem('aurasync_7day_plan',JSON.stringify({daysPerWeek,days:plan}));};
- return <Screen contentStyle={styles.content}><View style={styles.header}><Pressable onPress={()=>history.back()}><Ionicons name="arrow-back" size={24} color={colors.cyan}/></Pressable><View style={styles.headerCopy}><Text style={styles.eyebrow}>TRAINING PLAN</Text><Text style={styles.title}>My 7-Day Plan</Text></View></View>
+ return <Screen contentStyle={styles.content}><View style={styles.header}><Pressable onPress={()=>router.back()}><Ionicons name="arrow-back" size={24} color={colors.cyan}/></Pressable><View style={styles.headerCopy}><Text style={styles.eyebrow}>TRAINING PLAN</Text><Text style={styles.title}>My 7-Day Plan</Text></View></View>
  <Text style={styles.subtitle}>Choose how many days you train. Tap a day to change its focus.</Text><Text style={styles.label}>TRAINING DAYS / WEEK</Text>
  <View style={styles.selector}>{[2,3,4,5,6,7].map(n=><Pressable key={n} onPress={()=>setDaysPerWeek(n)} style={[styles.dayButton,daysPerWeek===n&&styles.active]}><Text style={[styles.dayText,daysPerWeek===n&&styles.activeText]}>{n}</Text></Pressable>)}</View>
  <View style={styles.list}>{plan.map((item,index)=><Pressable key={item.day} onPress={()=>cycle(index)} style={styles.row}><View style={styles.badge}><Text style={styles.badgeText}>{item.day.slice(0,3).toUpperCase()}</Text></View><View style={styles.copy}><Text style={styles.fullDay}>{item.day}</Text><Text style={styles.focus}>{item.focus}</Text></View><Ionicons name="chevron-forward" size={18} color={colors.cyan}/></Pressable>)}</View>

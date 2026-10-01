@@ -6,6 +6,7 @@ import { AuthInput } from '@/components/auth/AuthInput';
 import { OptionChips } from '@/components/auth/OptionChips';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { LoadingState, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
+import { router } from 'expo-router';
 import { Screen } from '@/components/ui/Screen';
 import { useAuth } from '@/state/AuthProvider';
 import { colors, radii, spacing, typography } from '@/theme';
@@ -91,13 +92,14 @@ export default function ProfileScreen() {
                 <Ionicons name="flask" size={20} color={colors.cyan} />
               </View>
               <View style={styles.sourceCopy}>
-                <Text style={styles.sourceName}>Demo / Synthetic Data</Text>
-                <Text style={styles.sourceDetail}>No wearable or health platform connected</Text>
+                <Text style={styles.sourceName}>Manual / Wearable Data</Text>
+                <Text style={styles.sourceDetail}>Enter measurements now; connect a wearable later for automatic sync.</Text>
               </View>
               <StatusBadge label="ACTIVE" tone="good" />
             </View>
           </GlassCard>
 
+          <PrimaryButton label="Enter Health Data" onPress={() => router.push("/manual-health")} />
           <PrimaryButton label="Edit Profile" onPress={() => setIsEditing(true)} />
           <Pressable
             accessibilityRole="button"

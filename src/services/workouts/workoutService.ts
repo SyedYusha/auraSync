@@ -46,7 +46,7 @@ export const workoutService = {
           .order('date', { ascending: false });
         if (error) throw new Error(error.message);
         if (data) {
-          return (data as WorkoutRow[]).map((row) => ({
+          const remoteWorkouts = (data as WorkoutRow[]).map((row) => ({
             id: row.id,
             date: row.date,
             type: row.type,
@@ -59,6 +59,11 @@ export const workoutService = {
               .sort((a, b) => a.position - b.position)
               .map((exercise) => ({ name: exercise.name, sets: exercise.sets, reps: exercise.reps })),
           }));
+          const remoteIds = new Set(remoteWorkouts.map((workout) => workout.id));
+          const localFallbacks = (await readLocal()).filter((workout) => !remoteIds.has(workout.id));
+          return [...remoteWorkouts, ...localFallbacks].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          );
         }
       } catch {
         // Fall through to the local session store for offline/error resilience.

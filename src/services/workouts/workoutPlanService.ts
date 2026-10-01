@@ -1,9 +1,10 @@
+import { Platform } from 'react-native';
 import type { PlannedExercise } from '@/types/member';
 import type { WorkoutPlan, WorkoutPlanInput } from '@/types/workout';
 
 // Web falls back to localhost; for physical devices set EXPO_PUBLIC_API_URL
 // to your PC's LAN IP (e.g. http://192.168.1.5:3001) in .env
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? '' : 'http://localhost:3001');
 
 const UPPER_EXERCISES: readonly PlannedExercise[] = [
   { name: 'Bench Press', sets: 4, reps: 8 },

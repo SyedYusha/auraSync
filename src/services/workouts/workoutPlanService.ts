@@ -99,7 +99,7 @@ interface WorkoutPlanResponse {
 
 export async function requestWorkoutPlan(input: WorkoutPlanInput): Promise<WorkoutPlan> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/workout-plan`, {
+    const response = await fetch(`${API_BASE_URL}/api/ai/workout-plan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -28,7 +28,7 @@ export function WorkoutPlanProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<string | null>(null);
 
   const recovery = useMemo(() => (snapshot ? calculateRecoveryScore(snapshot.recoveryInputs) : null), [snapshot]);
-  const canLoad = authStatus === 'authenticated' && healthStatus === 'ready' && snapshot !== null && user !== null;
+  const canLoad = authStatus === 'authenticated' && healthStatus === 'ready' && snapshot !== null && snapshot.sourceId !== 'none' && user !== null;
 
   const refresh = useCallback(async () => {
     if (!canLoad || !snapshot || !user || !recovery) {

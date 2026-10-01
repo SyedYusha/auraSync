@@ -19,6 +19,10 @@ interface ProviderResult {
   readonly content: string;
 }
 
+const REQUEST_TIMEOUT_MS = 25_000;
+const MAX_PROMPT_CHARS = 24_000;
+const MAX_RESPONSE_CHARS = 40_000;
+
 function providerConfigs(): ProviderConfig[] {
   const configs: ProviderConfig[] = [
     {
@@ -51,7 +55,11 @@ function providerConfigs(): ProviderConfig[] {
 }
 
 async function callProvider(config: ProviderConfig, input: GenerateJSONInput): Promise<string> {
-  const response = await fetch(`${config.baseUrl.replace(/\\/+$/, '')}/chat/completions`, {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${config.baseUrl.replace(/\\/+$/, '')}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -78,10 +86,22 @@ async function callProvider(config: ProviderConfig, input: GenerateJSONInput): P
   };
   const content = data.choices?.[0]?.message?.content;
   if (!content) throw new Error(`${config.id} returned an empty response`);
+  if (content.length > MAX_RESPONSE_CHARS) throw new Error(`${config.id} returned an oversized response`);
   return content;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`${config.id} provider timed out`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function generateAIJSON(input: GenerateJSONInput): Promise<ProviderResult> {
+  if (!input.system.trim() || !input.user.trim()) {
+    throw new Error('AI request content cannot be empty.');
+  }
   const configured = providerConfigs().filter((config) => Boolean(config.apiKey));
   if (configured.length === 0) {
     throw new Error('No AI providers are configured. Add at least one server-side provider API key.');

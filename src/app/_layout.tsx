@@ -22,6 +22,7 @@ export default function RootLayout() {
               <Stack.Screen name="workout-plan" />
               <Stack.Screen name="active-workout" />
               <Stack.Screen name="history" />
+              <Stack.Screen name="reports" />
             </Stack>
           </WorkoutPlanProvider>
         </HealthDataProvider>

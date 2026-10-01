@@ -34,7 +34,7 @@ const chooseFallbackCategory = (input: WorkoutPlanInput): ExerciseCategory => {
   }
 
   const rotation: ExerciseCategory[] = ['Chest', 'Back', 'Quads', 'Shoulders', 'Hamstrings / Glutes', 'Triceps', 'Biceps'];
-  return rotation.find((category) => !recentCategories.includes(category)) ?? 'Full Body' as ExerciseCategory;
+  return rotation.find((category) => !recentCategories.includes(category)) ?? 'Chest';
 };
 
 const fallbackExercises = (category: ExerciseCategory, recoveryScore: number): PlannedExercise[] => {

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { HealthTrendChart } from '@/components/health/HealthTrendChart';
-import { ErrorState, LoadingState, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
+import { ErrorState, LoadingState, OutlineButton, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Screen } from '@/components/ui/Screen';
 import { useAuth } from '@/state/AuthProvider';
@@ -107,15 +107,12 @@ export default function ReportsScreen() {
       </View>
 
       <View style={styles.rangeRow}>
-        {[7, 30].map((value) => (
-          <View key={value} style={styles.rangeItem}>
-            <PrimaryButton
-              label={`${value} DAYS`}
-              onPress={() => setRange(value as Range)}
-              variant={range === value ? 'primary' : 'secondary'}
-            />
-          </View>
-        ))}
+        <View style={styles.rangeItem}>
+          {range === 7 ? <PrimaryButton label="7 DAYS" onPress={() => setRange(7)} /> : <OutlineButton label="7 DAYS" onPress={() => setRange(7)} />}
+        </View>
+        <View style={styles.rangeItem}>
+          {range === 30 ? <PrimaryButton label="30 DAYS" onPress={() => setRange(30)} /> : <OutlineButton label="30 DAYS" onPress={() => setRange(30)} />}
+        </View>
       </View>
 
       {!hasHealthData ? (
@@ -180,7 +177,7 @@ export default function ReportsScreen() {
             </View>
           ))
         )}
-        <PrimaryButton label="OPEN FULL HISTORY" onPress={() => router.push('/history')} variant="secondary" />
+        <OutlineButton label="OPEN FULL HISTORY" onPress={() => router.push('/history')} />
       </GlassCard>
 
       <GlassCard style={styles.disclaimerCard}>

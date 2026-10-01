@@ -35,7 +35,7 @@ const emptySnapshot = (): HealthSnapshot => ({
   isSynthetic: false,
   member: { name: 'Member', fitnessGoal: 'General Fitness' },
   metrics: EMPTY_METRICS,
-  recoveryInputs: { sleep: 0, hrv: 0, stress: 0, trainingLoad: 0 },
+  recoveryInputs: { sleepScore: 0, hrv: 0, stressScore: 0, trainingLoad: 0 },
 });
 
 export function HealthDataProvider({ children }: PropsWithChildren) {

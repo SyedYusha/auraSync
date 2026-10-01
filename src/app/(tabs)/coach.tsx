@@ -78,6 +78,16 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
       const memberId = Date.now();
       const coachId = memberId + 1;
 
+      const previousTurns = messages
+        .filter((m) => m.text && !m.isLoading)
+        .slice(-4)
+        .map((m) => `${m.role === 'member' ? 'Member' : 'Coach'}: ${m.text}`)
+        .join('\n');
+
+      const contextualQuestion = previousTurns
+        ? `Conversation history:\n${previousTurns}\n\nFollow-up question from member: ${text}`
+        : text;
+
       setMessages((current) => [
         ...current,
         { id: memberId, role: 'member', text },
@@ -99,7 +109,7 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
 
         const response = await askCoach({
           healthContext: buildHealthContext(),
-          question: text,
+          question: contextualQuestion,
           isDemoMode: snapshot.isSynthetic,
         });
 
@@ -130,7 +140,7 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
         setIsSending(false);
       }
     },
-    [isSending, buildHealthContext, hasHealthData, snapshot, recovery],
+    [isSending, messages, buildHealthContext, hasHealthData, snapshot, recovery],
   );
 
   return (
@@ -140,7 +150,19 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
           <Text style={styles.title}>AI Coach</Text>
           <Text style={styles.subtitle}>Recommendation interface | demo context</Text>
         </View>
-        <StatusBadge label="AURA AI" tone="cyan" />
+        <View style={styles.headerRight}>
+          {messages.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Clear chat"
+              onPress={() => setMessages([])}
+              style={styles.clearButton}>
+              <Ionicons name="trash-outline" size={16} color={colors.silver} />
+              <Text style={styles.clearText}>Clear</Text>
+            </Pressable>
+          ) : null}
+          <StatusBadge label="AURA AI" tone="cyan" />
+        </View>
       </View>
       <GlassCard style={styles.contextCard}>
         <Ionicons name="sparkles" size={22} color={colors.cyan} />
@@ -209,6 +231,9 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  clearButton: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.line },
+  clearText: { color: colors.silver, fontSize: typography.label },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
   subtitle: { color: colors.silver, fontSize: typography.caption, marginTop: 4 },
   contextCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

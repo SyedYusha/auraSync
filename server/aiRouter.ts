@@ -43,15 +43,16 @@ function providerConfigs(): ProviderConfig[] {
 
   const order = (process.env.AI_PROVIDER_ORDER || 'openai,gemini,deepseek')
     .split(',')
-    .map((value) => value.trim().toLowerCase())
-    .filter((value): value is AIProvider => value === 'openai' || value === 'gemini' || value === 'deepseek');
+    .map((value: string) => value.trim().toLowerCase())
+    .filter((value: string): value is AIProvider => value === 'openai' || value === 'gemini' || value === 'deepseek');
 
-  const byId = new Map(configs.map((config) => [config.id, config]));
-  return order.map((id) => byId.get(id)).filter((config): config is ProviderConfig => Boolean(config));
+  const byId = new Map<AIProvider, ProviderConfig>(configs.map((config: ProviderConfig) => [config.id, config]));
+  return order.map((id: AIProvider) => byId.get(id)).filter((config: ProviderConfig | undefined): config is ProviderConfig => Boolean(config));
 }
 
 async function callProvider(config: ProviderConfig, input: GenerateJSONInput): Promise<string> {
-  const response = await fetch(`${config.baseUrl.replace(/\\/+$/, '')}/chat/completions`, {
+  const cleanBaseUrl = config.baseUrl.replace(/\/+$/, '');
+  const response = await fetch(`${cleanBaseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

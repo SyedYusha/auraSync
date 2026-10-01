@@ -1,13 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { MetricGrid } from '@/components/health/MetricCard';
 import { HealthTrendChart } from '@/components/health/HealthTrendChart';
 import { GlassCard } from '@/components/ui/GlassCard';
-import { ErrorState, LoadingState, StatusBadge } from '@/components/ui/Feedback';
+import { ErrorState, LoadingState, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
+import type { ManualHealthEntry } from '@/services/health/manualHealthDataService';
 import { useHealthData } from '@/state/HealthDataProvider';
-import { router } from 'expo-router';
-import { PrimaryButton } from '@/components/ui/Feedback';
 import { useRecovery } from '@/state/useRecovery';
 import { colors, spacing, typography } from '@/theme';
 
@@ -20,7 +20,18 @@ export default function HealthScreen() {
   return <HealthContent snapshot={snapshot} onRefresh={() => void refresh()} isDemoMode={isDemoMode} activityHistory={activityHistory} />;
 }
 
-function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { readonly snapshot: NonNullable<ReturnType<typeof useHealthData>['snapshot']>; readonly onRefresh: () => void; readonly isDemoMode: boolean; readonly activityHistory: readonly { capturedAt: string; hrv: number; sleep: number; sleepScore: number; stress: number; trainingLoad: number }[] }) {
+function HealthContent({
+  snapshot,
+  onRefresh,
+  isDemoMode,
+  activityHistory,
+}: {
+  readonly snapshot: NonNullable<ReturnType<typeof useHealthData>['snapshot']>;
+  readonly onRefresh: () => void;
+  readonly isDemoMode: boolean;
+  readonly activityHistory: readonly ManualHealthEntry[];
+}) {
+  const router = useRouter();
   const hasHealthData = snapshot.sourceId !== 'none';
   const recovery = useRecovery(snapshot);
   const metrics = Object.values(snapshot.metrics);

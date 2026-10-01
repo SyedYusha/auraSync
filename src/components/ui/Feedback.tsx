@@ -7,13 +7,24 @@ interface PrimaryButtonProps {
   readonly label: string;
   readonly onPress: () => void;
   readonly style?: StyleProp<ViewStyle>;
+  readonly disabled?: boolean;
 }
 
-export function PrimaryButton({ label, onPress, style }: PrimaryButtonProps) {
+export function PrimaryButton({ label, onPress, style, disabled = false }: PrimaryButtonProps) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={style}>
-      <LinearGradient colors={[colors.cyan, '#57D5E9', colors.violet]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.button}>
-        <Text style={styles.buttonLabel}>{label}</Text>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [style, disabled && styles.disabledButton, pressed && !disabled && styles.pressedButton]}>
+      <LinearGradient
+        colors={disabled ? ['rgba(11, 58, 61, 0.5)', 'rgba(6, 35, 38, 0.5)'] : [colors.cyan, '#57D5E9', colors.violet]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.button}>
+        <Text style={[styles.buttonLabel, disabled && styles.disabledButtonLabel]}>{label}</Text>
       </LinearGradient>
     </Pressable>
   );
@@ -99,6 +110,8 @@ const styles = StyleSheet.create({
   },
   dangerLabel: { color: colors.danger, fontSize: typography.title, fontWeight: '800' },
   pressedButton: { opacity: 0.7 },
+  disabledButton: { opacity: 0.6 },
+  disabledButtonLabel: { color: colors.silver },
   badge: { alignSelf: 'flex-start', borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 5, fontSize: typography.label, fontWeight: '800', overflow: 'hidden' },
   cyanBadge: { color: colors.cyan, backgroundColor: 'rgba(0, 229, 255, 0.1)' },
   goodBadge: { color: colors.success, backgroundColor: 'rgba(83, 229, 188, 0.12)' },

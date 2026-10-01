@@ -7,27 +7,27 @@ import type { WorkoutPlan, WorkoutPlanInput } from '@/types/workout';
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'web' ? '' : 'http://localhost:3001');
 
 const UPPER_EXERCISES: readonly PlannedExercise[] = [
-  { name: 'Bench Press', sets: 4, reps: 8 },
-  { name: 'Lat Pulldown', sets: 4, reps: 10 },
-  { name: 'Shoulder Press', sets: 3, reps: 10 },
-  { name: 'Seated Cable Row', sets: 3, reps: 10 },
-  { name: 'Lateral Raises', sets: 3, reps: 12 },
+  { name: 'Barbell bench press', sets: 4, reps: 8 },
+  { name: 'Wide-grip lat pulldown', sets: 4, reps: 10 },
+  { name: 'Standing barbell overhead press', sets: 3, reps: 10 },
+  { name: 'Seated cable row', sets: 3, reps: 10 },
+  { name: 'Dumbbell lateral raise', sets: 3, reps: 12 },
 ];
 
 const LOWER_EXERCISES: readonly PlannedExercise[] = [
-  { name: 'Back Squat', sets: 4, reps: 8 },
-  { name: 'Romanian Deadlift', sets: 4, reps: 10 },
-  { name: 'Leg Press', sets: 3, reps: 12 },
-  { name: 'Walking Lunges', sets: 3, reps: 12 },
-  { name: 'Standing Calf Raise', sets: 3, reps: 15 },
+  { name: 'Back squat', sets: 4, reps: 8 },
+  { name: 'Romanian deadlift', sets: 4, reps: 10 },
+  { name: 'Leg press', sets: 3, reps: 12 },
+  { name: 'Walking lunges', sets: 3, reps: 12 },
+  { name: 'Standing calf raise', sets: 3, reps: 15 },
 ];
 
 const RECOVERY_EXERCISES: readonly PlannedExercise[] = [
-  { name: 'Goblet Squat', sets: 3, reps: 12 },
-  { name: 'Incline Dumbbell Press', sets: 3, reps: 12 },
-  { name: 'Seated Cable Row', sets: 3, reps: 12 },
-  { name: 'Glute Bridge', sets: 3, reps: 15 },
-  { name: 'Dead Bug', sets: 3, reps: 12 },
+  { name: 'Goblet squat', sets: 3, reps: 12 },
+  { name: 'Incline dumbbell press', sets: 3, reps: 12 },
+  { name: 'Seated cable row', sets: 3, reps: 12 },
+  { name: 'Glute bridge', sets: 3, reps: 15 },
+  { name: 'Plank', sets: 3, reps: 60 },
 ];
 
 /**

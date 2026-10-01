@@ -18,11 +18,11 @@ interface WorkoutRecommendationCardProps {
 
 export function WorkoutRecommendationCard({
   onViewPlan,
-  title = 'Upper Body Strength',
-  intensity = 'High',
-  durationMin = 52,
-  focus = 'Chest, Back & Shoulders',
-  reason = 'Your recovery, sleep and HRV indicate strong readiness today.',
+  title = 'Readiness Conditioning',
+  intensity = 'Moderate',
+  durationMin = 45,
+  focus = 'Full Body & Core',
+  reason = 'Calibrated to your active readiness signals and recovery profile.',
   isLoading = false,
 }: WorkoutRecommendationCardProps) {
   const intensityTone = intensity.toLowerCase() === 'high' ? 'cyan' : intensity.toLowerCase() === 'moderate' ? 'good' : 'muted';

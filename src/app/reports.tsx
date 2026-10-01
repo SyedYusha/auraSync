@@ -78,7 +78,7 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
   const avg = (key: keyof ManualHealthEntry) => average(rows.map((item) => Number(item[key])));
   const source = demo ? 'DEMO DATA' : 'PERSONAL DATA';
   const logoUrl = 'https://raw.githubusercontent.com/SyedYusha/auraSync/master/assets/images/icon.png';
-  const metricRows = [
+  const metricRows: readonly (readonly [string, string, string])[] = [
     ['Heart Rate', rows.length ? Math.round(avg('heartRate')) + ' BPM' : '—', 'Current personal signal'],
     ['HRV', rows.length ? Math.round(avg('hrv')) + ' ms' : '—', 'Average'],
     ['Sleep', rows.length ? avg('sleep').toFixed(1) + ' h' : '—', 'Average'],
@@ -88,7 +88,7 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
     ['Steps', rows.length ? Math.round(avg('steps')).toLocaleString() : '—', 'Average per recorded day'],
     ['Active Minutes', rows.length ? Math.round(avg('activeMinutes')) + ' min' : '—', 'Average per recorded day'],
   ];
-  const trendRows = [
+  const trendRows: readonly (readonly [string, string])[] = [
     ['HRV', rows.length ? trend(rows.map((item) => item.hrv)) : 'No data'],
     ['Sleep', rows.length ? trend(rows.map((item) => item.sleep)) : 'No data'],
     ['Stress', rows.length ? trend(rows.map((item) => item.stress)) : 'No data'],
@@ -117,35 +117,37 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  @page { size: A4; margin: 14mm 14mm 16mm; }
+  @page { size: A4; margin: 12mm 14mm 14mm; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111111; background: #FFFFFF; font-size: 10.5px; }
-  .page { width: 100%; }
-  .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid #111111; }
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .logo { width: 42px; height: 42px; object-fit: contain; }
-  .brand-name { font-size: 21px; font-weight: 800; letter-spacing: 1px; }
-  .tagline { color: #555555; font-size: 9px; margin-top: 3px; letter-spacing: .7px; }
-  .report-meta { text-align: right; font-size: 9px; color: #555555; line-height: 1.6; }
-  h1 { font-size: 23px; margin: 24px 0 4px; letter-spacing: -.3px; }
-  .subtitle { color: #555555; font-size: 10px; margin-bottom: 20px; }
-  h2 { font-size: 10px; letter-spacing: 1.5px; margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #222222; }
-  table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #F7FCFC; background: #030708; font-size: 11px; }
+  .page { width: 100%; max-width: 800px; margin: 0 auto; background: #030708; }
+  .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 18px; border-bottom: 2px solid #00E5FF; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 44px; height: 44px; object-fit: contain; }
+  .brand-name { font-size: 22px; font-weight: 800; letter-spacing: 1.5px; color: #00E5FF; }
+  .tagline { color: #A6B2B8; font-size: 9px; margin-top: 3px; letter-spacing: 1px; font-weight: 600; }
+  .report-meta { text-align: right; font-size: 9px; color: #789095; line-height: 1.6; font-weight: 700; letter-spacing: 0.5px; }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 999px; background: rgba(0, 229, 255, 0.12); color: #00E5FF; font-weight: 800; font-size: 8.5px; border: 1px solid rgba(0, 229, 255, 0.3); margin-top: 4px; }
+  h1 { font-size: 22px; margin: 24px 0 4px; letter-spacing: -.3px; color: #FFFFFF; font-weight: 800; }
+  .subtitle { color: #789095; font-size: 10px; margin-bottom: 18px; }
+  h2 { font-size: 11px; letter-spacing: 1.5px; margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(118, 239, 244, 0.2); color: #00E5FF; text-transform: uppercase; font-weight: 800; }
+  table { width: 100%; border-collapse: collapse; page-break-inside: auto; background: rgba(6, 35, 38, 0.55); border-radius: 8px; overflow: hidden; border: 1px solid rgba(118, 239, 244, 0.15); }
   thead { display: table-header-group; }
   tr { page-break-inside: avoid; }
-  th { background: #111111; color: #FFFFFF; text-align: left; padding: 8px 7px; font-size: 8.5px; letter-spacing: .7px; text-transform: uppercase; }
-  td { padding: 8px 7px; border-bottom: 1px solid #D8D8D8; vertical-align: top; }
-  tbody tr:nth-child(even) { background: #F7F7F7; }
-  .strong { font-weight: 700; color: #111111; }
-  .value { font-weight: 700; }
-  .empty { color: #777777; text-align: center; padding: 16px; }
-  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .summary-card { border: 1px solid #CCCCCC; padding: 10px; min-height: 55px; }
-  .summary-label { color: #666666; font-size: 8px; text-transform: uppercase; letter-spacing: .8px; }
-  .summary-value { font-size: 17px; font-weight: 800; margin-top: 4px; }
-  .notice { margin-top: 20px; border: 1px solid #AAAAAA; padding: 10px; font-size: 9px; line-height: 1.5; }
-  .footer { margin-top: 24px; padding-top: 9px; border-top: 1px solid #222222; color: #666666; font-size: 8px; line-height: 1.5; display: flex; justify-content: space-between; gap: 15px; }
-  .footer-brand { color: #111111; font-weight: 800; }
+  th { background: #062326; color: #00E5FF; text-align: left; padding: 9px 10px; font-size: 9px; letter-spacing: .8px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid rgba(118, 239, 244, 0.25); }
+  td { padding: 9px 10px; border-bottom: 1px solid rgba(166, 178, 184, 0.12); vertical-align: top; color: #A6B2B8; font-size: 10.5px; }
+  tbody tr:nth-child(even) { background: rgba(11, 58, 61, 0.25); }
+  .strong { font-weight: 700; color: #FFFFFF; }
+  .value { font-weight: 800; color: #00E5FF; }
+  .empty { color: #789095; text-align: center; padding: 18px; font-style: italic; }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .summary-card { background: rgba(6, 35, 38, 0.65); border: 1px solid rgba(118, 239, 244, 0.2); border-radius: 10px; padding: 12px; min-height: 60px; }
+  .summary-label { color: #789095; font-size: 8.5px; text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+  .summary-value { font-size: 20px; font-weight: 800; margin-top: 4px; color: #00E5FF; }
+  .notice { margin-top: 24px; border: 1px solid rgba(118, 239, 244, 0.25); background: rgba(6, 35, 38, 0.45); border-radius: 8px; padding: 12px; font-size: 9px; line-height: 1.6; color: #A6B2B8; }
+  .notice strong { color: #00E5FF; font-weight: 800; }
+  .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid rgba(118, 239, 244, 0.2); color: #789095; font-size: 8.5px; line-height: 1.5; display: flex; justify-content: space-between; gap: 15px; }
+  .footer-brand { color: #00E5FF; font-weight: 800; }
 </style>
 </head>
 <body>
@@ -212,6 +214,7 @@ export default function ReportsScreen() {
   const [workouts, setWorkouts] = useState<readonly WorkoutRecord[]>([]);
   const [workoutStatus, setWorkoutStatus] = useState<'loading' | 'ready'>('loading');
   const [generatedReport, setGeneratedReport] = useState<string | null>(null);
+  const [referenceTime] = useState(() => Date.now());
 
   const loadWorkouts = useCallback(async () => {
     if (!user) {
@@ -219,7 +222,6 @@ export default function ReportsScreen() {
       setWorkoutStatus('ready');
       return;
     }
-    setWorkoutStatus('loading');
     try {
       setWorkouts(await workoutService.getWorkouts(user.id));
     } catch {
@@ -229,11 +231,32 @@ export default function ReportsScreen() {
     }
   }, [user]);
 
-  useEffect(() => { void loadWorkouts(); }, [loadWorkouts]);
+  useEffect(() => {
+    let active = true;
+    const fetchWorkouts = async () => {
+      if (!user) {
+        if (active) {
+          setWorkouts([]);
+          setWorkoutStatus('ready');
+        }
+        return;
+      }
+      try {
+        const records = await workoutService.getWorkouts(user.id);
+        if (active) setWorkouts(records);
+      } catch {
+        if (active) setWorkouts([]);
+      } finally {
+        if (active) setWorkoutStatus('ready');
+      }
+    };
+    void fetchWorkouts();
+    return () => { active = false; };
+  }, [user]);
 
   const healthRows = useMemo<readonly ManualHealthEntry[]>(() => {
     if (isDemoMode) {
-      const now = Date.now();
+      const now = referenceTime;
       return Array.from({ length: 14 }, (_, index) => ({
         capturedAt: new Date(now - index * 24 * 60 * 60 * 1000).toISOString(),
         heartRate: 62 + (index % 5),
@@ -248,7 +271,7 @@ export default function ReportsScreen() {
       }));
     }
     return activityHistory.filter((entry) => inRange(entry.capturedAt, range));
-  }, [activityHistory, isDemoMode, range]);
+  }, [activityHistory, isDemoMode, range, referenceTime]);
 
   const periodWorkouts = useMemo(() => workouts.filter((workout) => inRange(workout.date, range)), [range, workouts]);
   const hasHealthData = healthRows.length > 0;
@@ -316,7 +339,7 @@ export default function ReportsScreen() {
       {!hasHealthData ? (
         <GlassCard style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>Your report starts with real data</Text>
-          <Text style={styles.description}>Add today's health data or connect a supported source. AuraSync+ will not manufacture biometric history.</Text>
+          <Text style={styles.description}>Add today&apos;s health data or connect a supported source. AuraSync+ will not manufacture biometric history.</Text>
           <PrimaryButton label="ADD HEALTH DATA" onPress={() => router.push('/manual-health')} />
         </GlassCard>
       ) : (
@@ -409,9 +432,10 @@ const styles = StyleSheet.create({
   rangeRow: { flexDirection: 'row', gap: spacing.sm },
   rangeItem: { flex: 1 },
   generatorCard: { gap: spacing.md },
+  sectionTitle: { color: colors.white, fontSize: typography.title, fontWeight: '700' },
   summaryCard: { gap: spacing.md },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  stat: { width: '47%', minHeight: 72, justifyContent: 'center', padding: spacing.md, borderRadius: 14, backgroundColor: colors.card },
+  stat: { width: '47%', minHeight: 72, justifyContent: 'center', padding: spacing.md, borderRadius: 14, backgroundColor: colors.glass },
   statLabel: { color: colors.muted, fontSize: typography.caption },
   statValue: { color: colors.white, fontSize: typography.h2, fontWeight: '700', marginTop: 4 },
   chartCard: { gap: spacing.md },

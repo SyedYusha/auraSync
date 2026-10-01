@@ -26,7 +26,7 @@ const fields: readonly { key: Field; label: string; placeholder: string; unit: s
 ];
 
 export default function ManualHealthScreen() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { refresh } = useHealthData();
   const [values, setValues] = useState<Record<Field, string>>({
     heartRate: '', hrv: '', sleep: '', sleepScore: '', stress: '', trainingLoad: '',
@@ -93,7 +93,7 @@ export default function ManualHealthScreen() {
         </View>
       ))}
       <PrimaryButton label={saving ? 'SAVING…' : 'SAVE HEALTH DATA'} onPress={() => void save()} disabled={saving} />
-      <Text style={styles.tip}>Daily dashboard window: 24 hours. After that, the entry remains in History and the dashboard waits for today's fresh data.</Text>
+      <Text style={styles.tip}>Daily dashboard window: 24 hours. After that, the entry remains in History and the dashboard waits for today&apos;s fresh data.</Text>
     </Screen>
   );
 }

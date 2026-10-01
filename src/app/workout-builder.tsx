@@ -12,10 +12,16 @@ import { colors, radii, spacing, typography } from '@/theme';
 interface Selected { id: string; name: string; sets: number; reps: number; category: ExerciseCategory; }
 
 export default function WorkoutBuilderScreen() {
-  const [category, setCategory] = useState<ExerciseCategory>('Chest');
+  const [category, setCategory] = useState<ExerciseCategory>('Conditioning / Full Body');
   const [selected, setSelected] = useState<Selected[]>([]);
   const [query, setQuery] = useState('');
-  const exercises = useMemo(() => EXERCISE_LIBRARY.filter(e => e.category === category && e.name.toLowerCase().includes(query.toLowerCase())), [category, query]);
+  const exercises = useMemo(
+    () =>
+      query.trim()
+        ? EXERCISE_LIBRARY.filter((e) => e.name.toLowerCase().includes(query.trim().toLowerCase()))
+        : EXERCISE_LIBRARY.filter((e) => e.category === category),
+    [category, query],
+  );
 
   const toggle = (id: string) => {
     const exercise = EXERCISE_LIBRARY.find(e => e.id === id);

@@ -47,12 +47,10 @@ export default function TrainingHistoryScreen() {
   const [workouts, setWorkouts] = useState<readonly WorkoutRecord[]>([]);
 
   const load = useCallback(async () => {
-    if (!user) {
-      return;
-    }
+    const targetUserId = user?.id ?? 'demo_user';
     setStatus('loading');
     try {
-      const records = await workoutService.getWorkouts(user.id);
+      const records = await workoutService.getWorkouts(targetUserId);
       setWorkouts(records);
       setStatus('ready');
     } catch {

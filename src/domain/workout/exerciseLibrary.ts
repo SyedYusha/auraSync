@@ -11,7 +11,7 @@ export interface ExerciseDefinition {
   readonly defaultReps: number;
 }
 
-const groups: ReadonlyArray<[ExerciseCategory, string[]]> = [
+const groups: readonly [ExerciseCategory, string[]][] = [
 ['Chest',['Barbell bench press','Incline barbell bench press','Decline barbell bench press','Dumbbell flat press','Incline dumbbell press','Decline dumbbell press','Push-ups','Weighted dips — chest lean','Cable fly high-to-low','Cable fly low-to-high','Pec deck','Dumbbell fly']],
 ['Back',['Pull-ups','Chin-ups','Wide-grip lat pulldown','Close-grip lat pulldown','Barbell bent-over row','Pendlay row','T-bar row','One-arm dumbbell row','Seated cable row','Chest-supported row','Straight-arm pulldown','Rack pulls','Deadlift','Hyperextension']],
 ['Shoulders',['Standing barbell overhead press','Seated dumbbell shoulder press','Arnold press','Machine shoulder press','Dumbbell lateral raise','Cable lateral raise','Front raise','Rear-delt dumbbell fly','Reverse pec deck','Upright row','Landmine press','Pike push-up']],

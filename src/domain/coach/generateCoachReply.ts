@@ -9,13 +9,21 @@ export function generateCoachReply(question: string, snapshot: HealthSnapshot, r
 
   if (normalized.includes('rest')) {
     return recovery.readiness === 'Poor'
-      ? 'Yes. Your current readiness is low, so prioritize rest, hydration, and an easy walk today.'
-      : `You do not need a full rest day today. Your recovery is ${recovery.score}, with ${sleep} hours of sleep and low stress. Keep intensity purposeful and listen to your body.`;
+      ? `Your recovery readiness is low (${recovery.score}), so prioritize rest, hydration, and an easy walk today.`
+      : `A full rest day is optional based on your recovery score of ${recovery.score}, ${sleep}h of sleep, and stress at ${stress}/100. If you do train, keep intensity purposeful and listen to your body.`;
   }
 
   if (normalized.includes('recover')) {
-    return `You are ${recovery.readiness.toLowerCase()}ly recovered today. Your score is ${recovery.score}, HRV is ${hrv} ms, and stress is ${stress}/100. Your current fatigue level is ${recovery.fatigueLevel.toLowerCase()}.`;
+    return `Your recovery readiness is ${recovery.readiness.toLowerCase()} today. Your score is ${recovery.score}, HRV is ${hrv} ms, and stress is ${stress}/100. Your current fatigue level is ${recovery.fatigueLevel.toLowerCase()}.`;
   }
 
-  return `Your recovery score is ${recovery.score}, with strong sleep and low stress. I recommend a high-intensity upper-body session today. Focus on chest, back, and shoulders for 52 minutes.`;
+  if (recovery.readiness === 'Poor') {
+    return `Your recovery score is ${recovery.score} (${recovery.readiness.toLowerCase()} readiness) with a fatigue level of ${recovery.fatigueLevel.toLowerCase()}. Sleep was ${sleep}h and stress is ${stress}/100. Prioritize recovery or low-strain mobility today rather than heavy loading.`;
+  }
+
+  if (recovery.readiness === 'Moderate') {
+    return `Your recovery score is ${recovery.score} (${recovery.readiness.toLowerCase()} readiness). Sleep is ${sleep}h with stress at ${stress}/100. A moderate session or steady-state aerobic conditioning is appropriate today. Adjust volume according to how your warm-up feels.`;
+  }
+
+  return `Your recovery score is ${recovery.score} (${recovery.readiness.toLowerCase()} readiness) with HRV at ${hrv} ms and ${sleep}h of sleep. You are primed for higher intensity training today. Select a session aligned with your active training plan.`;
 }

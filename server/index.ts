@@ -2,6 +2,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express, { type Request } from 'express';
 import { generateAIJSON, getAIProviderStatus } from './aiRouter';
+import { EXERCISE_LIBRARY } from '../src/domain/workout/exerciseLibrary';
 
 dotenv.config({ path: '.env' });
 dotenv.config({ path: '../.env' });
@@ -262,6 +263,8 @@ interface WorkoutPlanResponse {
   fallback: boolean;
 }
 
+const ALLOWED_EXERCISES = new Set(EXERCISE_LIBRARY.map((exercise) => exercise.name.toLowerCase()));
+
 function parseWorkoutPlan(raw: string): WorkoutPlanAI | null {
   try {
     let cleaned = raw.trim();
@@ -283,6 +286,7 @@ function parseWorkoutPlan(raw: string): WorkoutPlanAI | null {
       if (typeof entry !== 'object' || entry === null) return null;
       const candidate = entry as Record<string, unknown>;
       if (typeof candidate.name !== 'string' || candidate.name.trim() === '') return null;
+      if (!ALLOWED_EXERCISES.has(candidate.name.trim().toLowerCase())) return null;
       const sets = Number(candidate.sets);
       const reps = Number(candidate.reps);
       if (!Number.isFinite(sets) || !Number.isFinite(reps) || sets < 1 || sets > 10 || reps < 1 || reps > 50) return null;
@@ -707,13 +711,13 @@ app.post('/api/ai/coach', async (req, res) => {
   }
 
   const demoNote = body.isDemoMode
-    ? '\\n\\nIMPORTANT: The data above is demo/synthetic data for prototype purposes. Do not claim it was collected from a physical wearable.'
+    ? '\n\nIMPORTANT: The data above is demo/synthetic data for prototype purposes. Do not claim it was collected from a physical wearable.'
     : '';
 
   try {
     const result = await generateAIJSON({
       system: SYSTEM_PROMPT,
-      user: `${body.healthContext}${demoNote}\\n\\nUser Question: ${body.question}`,
+      user: `${body.healthContext}${demoNote}\n\nUser Question: ${body.question}`,
       temperature: 0.7,
       maxTokens: 800,
     });
@@ -736,6 +740,60 @@ app.post('/api/ai/coach', async (req, res) => {
       error: 'AI providers are currently unavailable. AuraSync fallback can be used by the app.',
       fallback: true,
     } satisfies CoachResponse);
+  }
+});
+
+app.post('/api/ai/workout-plan', async (req, res) => {
+  const body = req.body as WorkoutPlanRequest;
+  if (!body?.healthContext) {
+    res.status(400).json({
+      success: false,
+      error: 'Missing health context.',
+      fallback: true,
+    } satisfies WorkoutPlanResponse);
+    return;
+  }
+
+  const demoNote = body.isDemoMode
+    ? '\n\nIMPORTANT: The metrics above are demo/synthetic data for prototype purposes. Do not claim they were collected from a physical wearable.'
+    : '';
+
+  const userMessage = `${body.healthContext}${demoNote}
+
+Member Profile: ${body.profileContext || 'Not provided'}
+Recent Workouts: ${body.recentWorkouts || 'No recent workouts recorded.'}
+
+Allowed AuraSync+ exercises:
+${EXERCISE_LIBRARY.map((exercise) => exercise.name).join(', ')}
+
+Design today's training session.`;
+
+  try {
+    const result = await generateAIJSON({
+      system: WORKOUT_PLAN_PROMPT,
+      user: userMessage,
+      temperature: 0.7,
+      maxTokens: 900,
+    });
+
+    const plan = parseWorkoutPlan(result.content);
+    if (!plan) {
+      throw new Error(`AI response from ${result.provider} did not match the workout plan schema.`);
+    }
+
+    res.json({
+      success: true,
+      plan,
+      fallback: false,
+      provider: result.provider,
+    } satisfies WorkoutPlanResponse & { provider?: string });
+  } catch (error) {
+    console.error('Multi-provider Workout Plan failed:', error);
+    res.status(503).json({
+      success: false,
+      error: 'AI providers are currently unavailable. AuraSync fallback can be used by the app.',
+      fallback: true,
+    } satisfies WorkoutPlanResponse);
   }
 });
 

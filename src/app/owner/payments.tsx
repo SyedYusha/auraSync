@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { MembershipStateBadge, PaymentStateBadge } from '@/components/gym/MembershipBadge';
 import { FadeIn, SkeletonBlock } from '@/components/gym/motion';
@@ -136,6 +136,20 @@ function PaymentRow({
   readonly member: GymMember | undefined;
   readonly isLast: boolean;
 }) {
+  const handleShareReceipt = () => {
+    const text = `AuraSync+ Payment Receipt
+--------------------------------
+Member: ${member?.fullName ?? 'Member'}
+Amount: ${formatCurrency(payment.amount)}
+Date: ${formatGymDateTime(payment.paidAt)}
+Method: ${PAYMENT_METHOD_LABELS[payment.method]}
+Reference ID: ${payment.id}
+Status: Completed
+--------------------------------
+AuraSync+ Gym Intelligence`;
+    void Share.share({ title: 'AuraSync+ Payment Receipt', message: text });
+  };
+
   return (
     <View style={[styles.paymentRow, !isLast && styles.rowBorder]}>
       <View style={styles.paymentIcon}>
@@ -145,6 +159,13 @@ function PaymentRow({
         <Text style={styles.paymentTitle}>{member?.fullName ?? 'Demo member'} · {formatCurrency(payment.amount)}</Text>
         <Text style={styles.paymentTime}>{formatGymDateTime(payment.paidAt)} · {PAYMENT_METHOD_LABELS[payment.method]}{payment.note ? ` · ${payment.note}` : ''}</Text>
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Share receipt for ${formatCurrency(payment.amount)}`}
+        onPress={handleShareReceipt}
+        style={styles.receiptButton}>
+        <Ionicons name="receipt-outline" size={17} color={colors.cyan} />
+      </Pressable>
     </View>
   );
 }
@@ -176,5 +197,6 @@ const styles = StyleSheet.create({
   paymentCopy: { flex: 1, gap: 2 },
   paymentTitle: { color: colors.white, fontSize: typography.body, fontWeight: '700' },
   paymentTime: { color: colors.muted, fontSize: typography.caption },
+  receiptButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,229,255,0.08)' },
   emptyText: { color: colors.silver, fontSize: typography.body, textAlign: 'center', padding: spacing.lg },
 });

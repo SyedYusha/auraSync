@@ -124,19 +124,20 @@ export default function ActiveWorkoutScreen() {
   };
 
   const handleFinish = async () => {
-    if (finishedRef.current || !user) return;
+    if (finishedRef.current) return;
+    const targetUserId = user?.id ?? 'demo_user';
     if (!allSetsDone) {
       Alert.alert('Finish workout?', 'This session will be saved as Partial with the sets you completed.', [
         { text: 'Keep Training', style: 'cancel' },
-        { text: 'Finish', style: 'destructive', onPress: () => void persistWorkout() },
+        { text: 'Finish', style: 'destructive', onPress: () => void persistWorkout(targetUserId) },
       ]);
       return;
     }
-    await persistWorkout();
+    await persistWorkout(targetUserId);
   };
 
-  const persistWorkout = async () => {
-    if (finishedRef.current || !user) return;
+  const persistWorkout = async (targetUserId: string) => {
+    if (finishedRef.current) return;
     finishedRef.current = true;
     setIsFinishing(true);
 
@@ -145,7 +146,7 @@ export default function ActiveWorkoutScreen() {
     const status: WorkoutStatus = allSetsDone ? 'Completed' : 'Partial';
 
     try {
-      await workoutService.saveWorkout(user.id, {
+      await workoutService.saveWorkout(targetUserId, {
         id: `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
         date: new Date().toISOString(),
         type: activePlan.title,

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { RiskBadge } from '@/components/gym/RiskBadge';
@@ -8,11 +8,17 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, LoadingState, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
 import { useGymOwner } from '@/state/GymOwnerProvider';
-import { colors, spacing, typography } from '@/theme';
+import { colors, radii, spacing, typography } from '@/theme';
 
 export default function ChurnIntelligenceScreen() {
   const { status, members, insights, error, refresh } = useGymOwner();
+  const [filter, setFilter] = useState<'all' | 'high' | 'medium'>('all');
   const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
+
+  const riskInsights = useMemo(() => {
+    if (filter === 'all') return insights.filter((insight) => insight.riskLevel !== 'low');
+    return insights.filter((insight) => insight.riskLevel === filter);
+  }, [insights, filter]);
 
   if (status === 'loading') {
     return <Screen scroll={false}><LoadingState label="Calculating attendance signals…" /></Screen>;
@@ -21,7 +27,9 @@ export default function ChurnIntelligenceScreen() {
     return <Screen scroll={false}><ErrorState message={error ?? 'Please try again.'} onRetry={() => void refresh()} /></Screen>;
   }
 
-  const riskInsights = insights.filter((insight) => insight.riskLevel !== 'low');
+  const highCount = insights.filter((i) => i.riskLevel === 'high').length;
+  const mediumCount = insights.filter((i) => i.riskLevel === 'medium').length;
+  const totalCount = insights.filter((i) => i.riskLevel !== 'low').length;
 
   return (
     <Screen onRefresh={() => void refresh()} contentStyle={styles.content}>
@@ -33,13 +41,34 @@ export default function ChurnIntelligenceScreen() {
           <Text style={styles.eyebrow}>GYM INTELLIGENCE DEMO</Text>
           <Text style={styles.title}>Churn Intelligence</Text>
         </View>
-        <StatusBadge label={`${riskInsights.length} TO REVIEW`} tone="muted" />
+        <StatusBadge label={`${totalCount} TO REVIEW`} tone="muted" />
       </View>
 
       <GlassCard style={styles.explainer}>
         <Ionicons name="information-circle-outline" size={21} color={colors.violet} />
         <Text style={styles.explainerText}>Attendance-based demo signal only. It is not a prediction and no action is automated.</Text>
       </GlassCard>
+
+      <View style={styles.filterRow}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setFilter('all')}
+          style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}>
+          <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>ALL ({totalCount})</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setFilter('high')}
+          style={[styles.filterChip, filter === 'high' && styles.filterChipActive]}>
+          <Text style={[styles.filterText, filter === 'high' && styles.filterTextActive]}>HIGH RISK ({highCount})</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setFilter('medium')}
+          style={[styles.filterChip, filter === 'medium' && styles.filterChipActive]}>
+          <Text style={[styles.filterText, filter === 'medium' && styles.filterTextActive]}>MEDIUM ({mediumCount})</Text>
+        </Pressable>
+      </View>
 
       {riskInsights.length === 0 ? (
         <GlassCard><Text style={styles.emptyText}>No members need an attendance review right now.</Text></GlassCard>
@@ -102,5 +131,20 @@ const styles = StyleSheet.create({
   driverRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs },
   driver: { flex: 1, color: colors.silver, fontSize: typography.caption, lineHeight: 17 },
   detailLink: { color: colors.cyan, fontSize: typography.caption, fontWeight: '700', marginTop: spacing.xs },
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  filterChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    backgroundColor: 'rgba(11, 58, 61, 0.4)',
+  },
+  filterChipActive: {
+    backgroundColor: colors.cyan,
+    borderColor: colors.cyan,
+  },
+  filterText: { color: colors.silver, fontSize: typography.caption, fontWeight: '700' },
+  filterTextActive: { color: colors.obsidian },
   emptyText: { color: colors.silver, textAlign: 'center', fontSize: typography.body },
 });

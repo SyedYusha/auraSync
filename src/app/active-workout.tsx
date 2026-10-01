@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   progressBar: { width: '100%', height: 6, borderRadius: radii.pill, backgroundColor: 'rgba(166, 178, 184, 0.15)', overflow: 'hidden', marginTop: 4 },
   progressFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.cyan },
   currentCard: { gap: spacing.sm },
-  currentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  currentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   currentName: { color: colors.white, fontSize: typography.h1, fontWeight: '700', flex: 1 },
   setRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
   setCell: { flex: 1, alignItems: 'center', gap: 3 },

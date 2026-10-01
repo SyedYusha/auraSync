@@ -58,6 +58,7 @@ function HomeContent({ snapshot, onRefresh, isDemoMode }: { readonly snapshot: H
         <View style={styles.actionRow}>
           <PrimaryButton label="BUILD WORKOUT" onPress={() => router.push('/workout-builder')} />
           <PrimaryButton label="7-DAY PLAN" onPress={() => router.push('/workout-plan-builder')} />
+          <PrimaryButton label="REPORTS" onPress={() => router.push('/reports')} />
         </View>
       </View>
     </Screen>

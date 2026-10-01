@@ -142,14 +142,14 @@ export default function ActivityScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
   subtitle: { color: colors.silver, fontSize: typography.caption, marginTop: 3 },
   todayCard: { gap: spacing.md },
   todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionTitle: { color: colors.white, fontSize: typography.title, fontWeight: '700', letterSpacing: 0.4 },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  statCell: { flexBasis: '31%', flexGrow: 1, backgroundColor: 'rgba(6, 35, 38, 0.55)', borderRadius: radii.sm, padding: spacing.sm, alignItems: 'center', gap: 4 },
+  statCell: { flexBasis: '47%', flexGrow: 1, minWidth: 130, backgroundColor: 'rgba(6, 35, 38, 0.55)', borderRadius: radii.sm, padding: spacing.sm, alignItems: 'center', gap: 4 },
   statIconWrap: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0, 229, 255, 0.1)', alignItems: 'center', justifyContent: 'center' },
   statValue: { color: colors.white, fontSize: typography.h2, fontWeight: '800' },
   statLabel: { color: colors.silver, fontSize: 11, fontWeight: '600', textAlign: 'center' },

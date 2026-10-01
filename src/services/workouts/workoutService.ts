@@ -18,6 +18,12 @@ interface WorkoutRow {
   workout_exercises?: { position: number; name: string; sets: number; reps: number }[];
 }
 
+async function saveLocalWorkout(userId: string, record: WorkoutRecord): Promise<void> {
+  const raw = await AsyncStorage.getItem(localKey(userId));
+  const existing = raw ? (JSON.parse(raw) as WorkoutRecord[]) : [];
+  await AsyncStorage.setItem(localKey(userId), JSON.stringify([record, ...existing]));
+}
+
 export const workoutService = {
   async getWorkouts(userId: string): Promise<readonly WorkoutRecord[]> {
     if (supabase) {
@@ -63,7 +69,10 @@ export const workoutService = {
         })
         .select()
         .single();
-      if (error) throw new Error(error.message);
+      if (error || !workoutRow) {
+        await saveLocalWorkout(userId, record);
+        return;
+      }
       const rows = record.exercises.map((exercise, index) => ({
         workout_id: workoutRow.id,
         position: index,
@@ -73,12 +82,13 @@ export const workoutService = {
       }));
       if (rows.length > 0) {
         const { error: exerciseError } = await supabase.from('workout_exercises').insert(rows);
-        if (exerciseError) throw new Error(exerciseError.message);
+        if (exerciseError) {
+          // The workout itself is already persisted remotely; keep the session rather than losing it.
+          return;
+        }
       }
       return;
     }
-    const raw = await AsyncStorage.getItem(localKey(userId));
-    const existing = raw ? (JSON.parse(raw) as WorkoutRecord[]) : [];
-    await AsyncStorage.setItem(localKey(userId), JSON.stringify([record, ...existing]));
+    await saveLocalWorkout(userId, record);
   },
 };

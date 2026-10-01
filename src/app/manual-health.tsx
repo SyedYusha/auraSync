@@ -93,7 +93,7 @@ export default function ManualHealthScreen() {
         </View>
       ))}
       <PrimaryButton label={saving ? 'SAVING…' : 'SAVE HEALTH DATA'} onPress={() => void save()} disabled={saving} />
-      <Text style={styles.tip}>Tip: add a new entry each day. AuraSync+ will use the history to show trends.</Text>
+      <Text style={styles.tip}>Daily dashboard window: 24 hours. After that, the entry remains in History and the dashboard waits for today's fresh data.</Text>
     </Screen>
   );
 }

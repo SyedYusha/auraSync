@@ -7,6 +7,7 @@ import { PrimaryButton } from '@/components/ui/Feedback';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Screen } from '@/components/ui/Screen';
 import { saveManualHealthEntry } from '@/services/health/manualHealthDataService';
+import { useHealthData } from '@/state/HealthDataProvider';
 import { useAuth } from '@/state/AuthProvider';
 import { colors, spacing, typography } from '@/theme';
 

@@ -1,4 +1,5 @@
 import { generateAIJSON } from '../../server/aiRouter';
+import { EXERCISE_LIBRARY } from '../../src/domain/workout/exerciseLibrary';
 
 type WorkoutPlanRequest = {
   healthContext?: string;
@@ -24,7 +25,7 @@ const SYSTEM_PROMPT = `You are the AuraSync+ Workout Planner. Design one practic
 RULES:
 - Base the session on the supplied recovery score, HRV, sleep, stress, training load, fitness goal, fitness level and recent workout context.
 - Higher recovery can support higher intensity; lower recovery should reduce intensity and volume.
-- Prefer exercises from the supplied AuraSync+ exercise library when possible.
+- Use only exercises from the supplied AuraSync+ exercise library.
 - Do not invent biometric measurements.
 - Do not diagnose disease or provide medical advice.
 - Never claim demo/synthetic data came from a physical wearable.
@@ -40,6 +41,8 @@ ALWAYS respond with one valid JSON object and nothing else:
   "recoveryTip": "one short recovery guidance sentence",
   "exercises": [{"name":"exercise name","sets":3,"reps":10}]
 }`;
+
+const ALLOWED_EXERCISES = new Set(EXERCISE_LIBRARY.map((exercise) => exercise.name.toLowerCase()));
 
 function parsePlan(raw: string): WorkoutPlan | null {
   try {
@@ -58,6 +61,7 @@ function parsePlan(raw: string): WorkoutPlan | null {
       if (typeof item !== 'object' || item === null) return null;
       const value = item as Record<string, unknown>;
       if (typeof value.name !== 'string' || !value.name.trim()) return null;
+      if (!ALLOWED_EXERCISES.has(value.name.trim().toLowerCase())) return null;
       const sets = Number(value.sets);
       const reps = Number(value.reps);
       if (!Number.isFinite(sets) || !Number.isFinite(reps) || sets < 1 || sets > 10 || reps < 1 || reps > 50) return null;
@@ -90,7 +94,7 @@ export default async function handler(req: any, res: any) {
   }
 
   const demoNote = body.isDemoMode
-    ? '\\n\\nIMPORTANT: The metrics above are demo/synthetic data for prototype purposes. Do not claim they were collected from a physical wearable.'
+    ? '\n\nIMPORTANT: The metrics above are demo/synthetic data for prototype purposes. Do not claim they were collected from a physical wearable.'
     : '';
 
   try {
@@ -100,6 +104,9 @@ export default async function handler(req: any, res: any) {
 
 Member Profile: ${body.profileContext || 'Not provided'}
 Recent Workouts: ${body.recentWorkouts || 'No recent workouts recorded.'}
+
+Allowed AuraSync+ exercises:
+${EXERCISE_LIBRARY.map((exercise) => exercise.name).join(', ')}
 
 Design today's training session.`,
       temperature: 0.7,

@@ -91,8 +91,12 @@ export default async function handler(req: any, res: any) {
   }
 
   const body = req.body as WorkoutPlanRequest;
-  if (!body?.healthContext) {
-    res.status(400).json({ success: false, error: 'Missing health context.', fallback: true });
+  if (!body?.healthContext || typeof body.healthContext !== 'string') {
+    res.status(400).json({ success: false, error: 'Missing or invalid health context.', fallback: true });
+    return;
+  }
+  if (body.healthContext.length > 12000 || (body.profileContext?.length ?? 0) > 4000 || (body.recentWorkouts?.length ?? 0) > 12000) {
+    res.status(413).json({ success: false, error: 'AI request is too large.', fallback: true });
     return;
   }
 

@@ -46,14 +46,14 @@ export default function CoachScreen() {
 
 function CoachContent({ snapshot }: { readonly snapshot: HealthSnapshot }) {
   const hasHealthData = snapshot.sourceId !== 'none';
-  const recovery = hasHealthData ? useRecovery(snapshot) : null;
+  const recovery = useRecovery(snapshot);
   const [messages, setMessages] = useState<readonly ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   const buildHealthContext = useCallback(() => {
     const m = snapshot.metrics;
-    if (!recovery) {
+    if (!hasHealthData) {
       return `No health data is available yet.
 Data Source: none
 Synthetic Demo Data: No`;
@@ -130,7 +130,7 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
         setIsSending(false);
       }
     },
-    [isSending, buildHealthContext, snapshot, recovery],
+    [isSending, buildHealthContext, hasHealthData, snapshot, recovery],
   );
 
   return (

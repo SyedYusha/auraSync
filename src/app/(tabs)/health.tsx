@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.silver, fontSize: typography.body, marginTop: 4 },
   recoveryOverview: { gap: spacing.xs },
   overviewLabel: { color: colors.cyan, fontSize: typography.label, letterSpacing: 0.7, fontWeight: '800' },
-  scoreRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  scoreRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' },
   emptyRecovery: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   emptyRecoveryCopy: { flex: 1, gap: 3 },
   emptyScore: { color: colors.muted, fontSize: 52, fontWeight: '300' },

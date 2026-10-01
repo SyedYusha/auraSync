@@ -7,7 +7,8 @@ export type HealthDataSourceId =
   | 'apple-health'
   | 'garmin'
   | 'fitbit'
-  | 'aurasync-wearable';
+  | 'aurasync-wearable'
+  | 'manual';
 
 export type HealthMetricId =
   | 'heartRate'

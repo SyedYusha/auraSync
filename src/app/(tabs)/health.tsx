@@ -71,7 +71,7 @@ function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { r
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm, flexWrap: 'wrap' },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
   subtitle: { color: colors.silver, fontSize: typography.body, marginTop: 4 },
   recoveryOverview: { gap: spacing.xs },

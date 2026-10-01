@@ -1,6 +1,7 @@
 import type { RecoveryInputs } from './recovery';
 
 export type HealthDataSourceId =
+  | 'none'
   | 'demo'
   | 'health-connect'
   | 'apple-health'
@@ -35,7 +36,7 @@ export interface MemberProfile {
 export interface HealthSnapshot {
   readonly capturedAt: string;
   readonly sourceId: HealthDataSourceId;
-  readonly isSynthetic: true;
+  readonly isSynthetic: boolean;
   readonly member: MemberProfile;
   readonly metrics: Readonly<Record<HealthMetricId, HealthMetric>>;
   readonly recoveryInputs: RecoveryInputs;

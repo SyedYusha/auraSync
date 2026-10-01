@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
   subtitle: { color: colors.silver, fontSize: typography.body, lineHeight: 20 },
   rangeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  rangeItem: { flex: 1 },
+  rangeItem: { flexGrow: 1, flexBasis: 140, minWidth: 120 },
   generatorCard: { gap: spacing.md },
   summaryCard: { gap: spacing.md },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

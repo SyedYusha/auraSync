@@ -56,7 +56,10 @@ export default function ActivityScreen() {
 
   const trainingLoad = snapshot?.metrics.trainingLoad.value ?? null;
 
-  const latestManual = activityHistory[0];
+  const latestManual = activityHistory.find((entry) => {
+    const capturedAt = new Date(entry.capturedAt).getTime();
+    return Number.isFinite(capturedAt) && Date.now() - capturedAt >= 0 && Date.now() - capturedAt < 24 * 60 * 60 * 1000;
+  });
   const stats = useMemo<readonly StatConfig[]>(() => [
     { icon: 'footsteps-outline', label: 'Steps', value: isDemoMode ? DEMO_TODAY.steps.toLocaleString('en-US') : latestManual ? latestManual.steps.toLocaleString('en-US') : '—', detail: isDemoMode ? 'today' : latestManual ? 'self-entered' : 'not recorded' },
     { icon: 'flame-outline', label: 'Calories Burned', value: isDemoMode ? `${DEMO_TODAY.caloriesBurned}` : latestManual ? `${latestManual.caloriesBurned}` : '—', detail: 'kcal' },

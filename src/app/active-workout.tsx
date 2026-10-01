@@ -38,7 +38,19 @@ export default function ActiveWorkoutScreen() {
   const finishedRef = useRef(false);
 
   useEffect(() => {
-    const loadCustom = async () => {
+    const loadSelectedWorkout = async () => {
+      const aiRaw = await AsyncStorage.getItem('aurasync_active_ai_workout');
+      if (aiRaw) {
+        try {
+          const selected = JSON.parse(aiRaw) as typeof plan;
+          if (selected?.exercises?.length) {
+            setCustomPlan(selected);
+            await AsyncStorage.removeItem('aurasync_active_ai_workout');
+            return;
+          }
+        } catch {}
+      }
+
       const raw = await AsyncStorage.getItem('aurasync_active_custom_workout');
       if (!raw) return;
       try {
@@ -47,7 +59,7 @@ export default function ActiveWorkoutScreen() {
         setCustomPlan({ title: 'Custom Workout', intensity: 'Moderate', durationMin: Math.max(15, items.length * 8), focus: items.map(x => x.category).filter((v,i,a)=>a.indexOf(v)===i).join(' • '), reason: 'Built by you.', recoveryTip: 'Adjust intensity based on how you feel.', exercises: items, isFallback: false });
       } catch {}
     };
-    void loadCustom();
+    void loadSelectedWorkout();
   }, []);
 
   const activePlan = customPlan ?? plan;
@@ -146,7 +158,22 @@ export default function ActiveWorkoutScreen() {
     const status: WorkoutStatus = allSetsDone ? 'Completed' : 'Partial';
 
     try {
+<<<<<<< HEAD
       await workoutService.saveWorkout(targetUserId, {
+=======
+      const performedExercises = activePlan.exercises
+        .map((exercise, index) => ({
+          ...exercise,
+          sets: completedSets[index] ?? 0,
+        }))
+        .filter((exercise) => exercise.sets > 0)
+        .map((exercise) => ({
+          ...exercise,
+          reps: exercise.reps,
+        }));
+
+      await workoutService.saveWorkout(user.id, {
+>>>>>>> 5fb5ef8097362290a1b6c788ab3899c21ca119cd
         id: `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
         date: new Date().toISOString(),
         type: activePlan.title,
@@ -154,13 +181,13 @@ export default function ActiveWorkoutScreen() {
         intensity: activePlan.intensity,
         focus: activePlan.focus,
         calories: Math.round(durationMin * multiplier),
-        exercises: activePlan.exercises,
+        exercises: performedExercises,
         status,
       });
     } catch {
       // The local fallback still keeps the session if Supabase is unavailable.
     } finally {
-      await AsyncStorage.removeItem('aurasync_active_custom_workout');
+      await AsyncStorage.multiRemove(['aurasync_active_custom_workout', 'aurasync_active_ai_workout']);
       router.replace('/history');
     }
   };
@@ -279,8 +306,8 @@ const styles = StyleSheet.create({
   progressBar: { width: '100%', height: 6, borderRadius: radii.pill, backgroundColor: 'rgba(166, 178, 184, 0.15)', overflow: 'hidden', marginTop: 4 },
   progressFill: { height: '100%', borderRadius: radii.pill, backgroundColor: colors.cyan },
   currentCard: { gap: spacing.sm },
-  currentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  currentName: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
+  currentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
+  currentName: { color: colors.white, fontSize: typography.h1, fontWeight: '700', flex: 1 },
   setRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs },
   setCell: { flex: 1, alignItems: 'center', gap: 3 },
   setLabel: { color: colors.muted, fontSize: typography.label, fontWeight: '700', letterSpacing: 0.5 },

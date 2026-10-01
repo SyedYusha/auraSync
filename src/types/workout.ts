@@ -1,4 +1,4 @@
-import type { PlannedExercise } from './member';
+import type { PlannedExercise, WorkoutRecord } from './member';
 
 export interface WorkoutPlan {
   readonly title: string;
@@ -21,5 +21,6 @@ export interface WorkoutPlanInput {
   readonly fitnessGoal: string;
   readonly fitnessLevel: string;
   readonly lastWorkoutType: string | null;
+  readonly recentWorkouts: readonly WorkoutRecord[];
   readonly isDemoMode: boolean;
 }

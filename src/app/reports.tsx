@@ -102,6 +102,15 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
   const trendHtml = trendRows.map(([name, value]) =>
     '<tr><td class="strong">' + escapeHtml(name) + '</td><td>' + escapeHtml(value) + '</td></tr>'
   ).join('');
+  const totalTrainingMinutes = workouts.reduce((sum, workout) => sum + workout.durationMin, 0);
+  const completedSetCount = workouts.reduce((sum, workout) => sum + workout.exercises.reduce((exerciseSum, exercise) => exerciseSum + exercise.sets, 0), 0);
+  const insightHtml = rows.length
+    ? [
+        average(rows.map((item) => item.sleep)) >= 7 ? 'Average sleep is at or above 7 hours across recorded entries.' : 'Average sleep is below 7 hours across recorded entries.',
+        average(rows.map((item) => item.stress)) <= 40 ? 'Recorded stress is relatively controlled.' : 'Recorded stress is elevated; consider lighter training when appropriate.',
+        workouts.length ? 'Training history is available for the selected period and can be compared with health trends.' : 'No completed workouts were recorded in this period.'
+      ].map((item) => '<li>' + escapeHtml(item) + '</li>').join('')
+    : '<li>Add real health data to generate personalized intelligence.</li>';
   const workoutHtml = workouts.length
     ? workouts.slice(0, 12).map((workout) =>
       '<tr><td class="strong">' + escapeHtml(workout.focus || workout.type) + '</td><td>' +
@@ -134,6 +143,7 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
   table { width: 100%; border-collapse: collapse; page-break-inside: auto; background: rgba(6, 35, 38, 0.55); border-radius: 8px; overflow: hidden; border: 1px solid rgba(118, 239, 244, 0.15); }
   thead { display: table-header-group; }
   tr { page-break-inside: avoid; }
+<<<<<<< HEAD
   th { background: #062326; color: #00E5FF; text-align: left; padding: 9px 10px; font-size: 9px; letter-spacing: .8px; text-transform: uppercase; font-weight: 800; border-bottom: 1px solid rgba(118, 239, 244, 0.25); }
   td { padding: 9px 10px; border-bottom: 1px solid rgba(166, 178, 184, 0.12); vertical-align: top; color: #A6B2B8; font-size: 10.5px; }
   tbody tr:nth-child(even) { background: rgba(11, 58, 61, 0.25); }
@@ -148,6 +158,24 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
   .notice strong { color: #00E5FF; font-weight: 800; }
   .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid rgba(118, 239, 244, 0.2); color: #789095; font-size: 8.5px; line-height: 1.5; display: flex; justify-content: space-between; gap: 15px; }
   .footer-brand { color: #00E5FF; font-weight: 800; }
+=======
+  th { background: #111111; color: #FFFFFF; text-align: left; padding: 8px 7px; font-size: 8.5px; letter-spacing: .7px; text-transform: uppercase; }
+  td { padding: 8px 7px; border-bottom: 1px solid #D8D8D8; vertical-align: top; }
+  tbody tr:nth-child(even) { background: #F7F7F7; }
+  .strong { font-weight: 700; color: #111111; }
+  .value { font-weight: 700; }
+  .empty { color: #777777; text-align: center; padding: 16px; }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .summary-card { border: 1px solid #CCCCCC; padding: 10px; min-height: 55px; }
+  .summary-label { color: #666666; font-size: 8px; text-transform: uppercase; letter-spacing: .8px; }
+  .summary-value { font-size: 17px; font-weight: 800; margin-top: 4px; }
+  .insight-box { border: 1px solid #CCCCCC; padding: 10px 12px; line-height: 1.5; }
+  .insight-box ul { margin: 0 0 10px 18px; padding: 0; }
+  .next-action { border-top: 1px solid #D8D8D8; padding-top: 8px; }
+  .notice { margin-top: 20px; border: 1px solid #AAAAAA; padding: 10px; font-size: 9px; line-height: 1.5; }
+  .footer { margin-top: 24px; padding-top: 9px; border-top: 1px solid #222222; color: #666666; font-size: 8px; line-height: 1.5; display: flex; justify-content: space-between; gap: 15px; }
+  .footer-brand { color: #111111; font-weight: 800; }
+>>>>>>> 5fb5ef8097362290a1b6c788ab3899c21ca119cd
 </style>
 </head>
 <body>
@@ -173,6 +201,8 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
   <div class="summary">
     <div class="summary-card"><div class="summary-label">Health Entries</div><div class="summary-value">${rows.length}</div></div>
     <div class="summary-card"><div class="summary-label">Completed Workouts</div><div class="summary-value">${workouts.length}</div></div>
+    <div class="summary-card"><div class="summary-label">Training Minutes</div><div class="summary-value">${totalTrainingMinutes}</div></div>
+    <div class="summary-card"><div class="summary-label">Completed Sets</div><div class="summary-value">${completedSetCount}</div></div>
   </div>
 
   <h2>01 · HEALTH SNAPSHOT</h2>
@@ -187,7 +217,10 @@ function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], worko
     <tbody>${trendHtml}</tbody>
   </table>
 
-  <h2>03 · TRAINING HISTORY</h2>
+  <h2>03 · INTELLIGENCE &amp; NEXT ACTIONS</h2>
+  <div class="insight-box"><ul>${insightHtml}</ul><div class="next-action"><strong>Next action:</strong> ${rows.length === 0 ? "Record or sync fresh health data before relying on trend-based recommendations." : "Continue tracking consistently and use your latest recovery signals to guide training intensity."}</div></div>
+
+  <h2>04 · TRAINING HISTORY</h2>
   <table>
     <thead><tr><th>Workout</th><th>Date</th><th>Duration</th><th>Intensity</th><th>Exercises</th></tr></thead>
     <tbody>${workoutHtml}</tbody>
@@ -429,8 +462,8 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 1 },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
   subtitle: { color: colors.silver, fontSize: typography.body, lineHeight: 20 },
-  rangeRow: { flexDirection: 'row', gap: spacing.sm },
-  rangeItem: { flex: 1 },
+  rangeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  rangeItem: { flexGrow: 1, flexBasis: 140, minWidth: 120 },
   generatorCard: { gap: spacing.md },
   sectionTitle: { color: colors.white, fontSize: typography.title, fontWeight: '700' },
   summaryCard: { gap: spacing.md },

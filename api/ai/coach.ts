@@ -68,8 +68,12 @@ export default async function handler(req: any, res: any) {
   }
 
   const body = req.body as CoachRequest;
-  if (!body?.question || !body?.healthContext) {
-    res.status(400).json({ success: false, error: 'Missing question or health context.', fallback: true });
+  if (!body?.question || !body?.healthContext || typeof body.question !== 'string' || typeof body.healthContext !== 'string') {
+    res.status(400).json({ success: false, error: 'Missing or invalid question or health context.', fallback: true });
+    return;
+  }
+  if (body.question.length > 2000 || body.healthContext.length > 12000) {
+    res.status(413).json({ success: false, error: 'AI request is too large.', fallback: true });
     return;
   }
 

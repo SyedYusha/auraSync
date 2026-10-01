@@ -51,6 +51,7 @@ export function WorkoutPlanProvider({ children }: PropsWithChildren) {
         fitnessGoal: profile?.fitnessGoal ?? 'General Fitness',
         fitnessLevel: profile?.fitnessLevel ?? 'Beginner',
         lastWorkoutType: workouts[0]?.type ?? null,
+        recentWorkouts: workouts.slice(0, 7),
         isDemoMode: snapshot.isSynthetic,
       });
 

@@ -45,13 +45,19 @@ export default function CoachScreen() {
 }
 
 function CoachContent({ snapshot }: { readonly snapshot: HealthSnapshot }) {
-  const recovery = useRecovery(snapshot);
+  const hasHealthData = snapshot.sourceId !== 'none';
+  const recovery = hasHealthData ? useRecovery(snapshot) : null;
   const [messages, setMessages] = useState<readonly ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [isSending, setIsSending] = useState(false);
 
   const buildHealthContext = useCallback(() => {
     const m = snapshot.metrics;
+    if (!recovery) {
+      return `No health data is available yet.
+Data Source: none
+Synthetic Demo Data: No`;
+    }
     return `Recovery Score: ${recovery.score}/100
 Readiness: ${recovery.readiness}
 Fatigue Level: ${recovery.fatigueLevel}
@@ -81,6 +87,16 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
       setIsSending(true);
 
       try {
+        if (!recovery) {
+          const fallbackText = 'I need some real fitness data before I can make a readiness-based recommendation. Add today’s health data or connect a supported health source first.';
+          setMessages((current) =>
+            current.map((m) =>
+              m.id === coachId ? { ...m, text: fallbackText, isLoading: false, isFallback: true } : m,
+            ),
+          );
+          return;
+        }
+
         const response = await askCoach({
           healthContext: buildHealthContext(),
           question: text,
@@ -131,7 +147,7 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
         <View style={styles.contextCopy}>
           <Text style={styles.contextTitle}>Today’s readiness context</Text>
           <Text style={styles.contextText}>
-            Recovery {recovery.score} | {recovery.readiness} | Sleep {snapshot.metrics.sleep.value} hrs
+            {recovery ? `Recovery ${recovery.score} | ${recovery.readiness} | Sleep ${snapshot.metrics.sleep.value} hrs` : 'Connect health data to unlock readiness-based coaching.'}
           </Text>
         </View>
       </GlassCard>

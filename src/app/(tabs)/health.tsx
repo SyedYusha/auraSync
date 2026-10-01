@@ -22,7 +22,7 @@ export default function HealthScreen() {
 
 function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { readonly snapshot: NonNullable<ReturnType<typeof useHealthData>['snapshot']>; readonly onRefresh: () => void; readonly isDemoMode: boolean; readonly activityHistory: readonly { capturedAt: string; hrv: number; sleep: number; sleepScore: number; stress: number; trainingLoad: number }[] }) {
   const hasHealthData = snapshot.sourceId !== 'none';
-  const recovery = hasHealthData ? useRecovery(snapshot) : null;
+  const recovery = useRecovery(snapshot);
   const metrics = Object.values(snapshot.metrics);
 
   return (
@@ -36,7 +36,7 @@ function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { r
       </View>
       <GlassCard style={styles.recoveryOverview}>
         <Text style={styles.overviewLabel}>RECOVERY</Text>
-        {recovery ? (
+        {hasHealthData ? (
           <View style={styles.scoreRow}>
             <Text style={styles.score}>{recovery.score}</Text>
             <View>

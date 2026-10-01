@@ -75,83 +75,130 @@ function escapeHtml(value: string) {
 }
 
 function buildReportHtml(range: Range, rows: readonly ManualHealthEntry[], workouts: readonly WorkoutRecord[], demo: boolean) {
-  const avgHrv = Math.round(average(rows.map((item) => item.hrv)));
-  const avgSleep = average(rows.map((item) => item.sleep)).toFixed(1);
-  const avgStress = Math.round(average(rows.map((item) => item.stress)));
-  const avgLoad = Math.round(average(rows.map((item) => item.trainingLoad)));
-  const source = demo ? 'Demo data' : 'Personal data';
+  const avg = (key: keyof ManualHealthEntry) => average(rows.map((item) => Number(item[key])));
+  const source = demo ? 'DEMO DATA' : 'PERSONAL DATA';
+  const logoUrl = 'https://raw.githubusercontent.com/SyedYusha/auraSync/master/assets/images/icon.png';
+  const metricRows = [
+    ['Heart Rate', rows.length ? Math.round(avg('heartRate')) + ' BPM' : '—', 'Current personal signal'],
+    ['HRV', rows.length ? Math.round(avg('hrv')) + ' ms' : '—', 'Average'],
+    ['Sleep', rows.length ? avg('sleep').toFixed(1) + ' h' : '—', 'Average'],
+    ['Sleep Score', rows.length ? Math.round(avg('sleepScore')) + '/100' : '—', 'Average'],
+    ['Stress', rows.length ? Math.round(avg('stress')) + '/100' : '—', 'Average'],
+    ['Training Load', rows.length ? Math.round(avg('trainingLoad')) + '/100' : '—', 'Average'],
+    ['Steps', rows.length ? Math.round(avg('steps')).toLocaleString() : '—', 'Average per recorded day'],
+    ['Active Minutes', rows.length ? Math.round(avg('activeMinutes')) + ' min' : '—', 'Average per recorded day'],
+  ];
   const trendRows = [
     ['HRV', rows.length ? trend(rows.map((item) => item.hrv)) : 'No data'],
     ['Sleep', rows.length ? trend(rows.map((item) => item.sleep)) : 'No data'],
     ['Stress', rows.length ? trend(rows.map((item) => item.stress)) : 'No data'],
     ['Training Load', rows.length ? trend(rows.map((item) => item.trainingLoad)) : 'No data'],
+    ['Steps', rows.length ? trend(rows.map((item) => item.steps)) : 'No data'],
+    ['Active Minutes', rows.length ? trend(rows.map((item) => item.activeMinutes)) : 'No data'],
   ];
-  const workoutRows = workouts.slice(0, 10).map((workout) => `
-    <tr>
-      <td>${escapeHtml(workout.focus || workout.type)}</td>
-      <td>${escapeHtml(new Date(workout.date).toLocaleDateString())}</td>
-      <td>${workout.durationMin} min</td>
-      <td>${escapeHtml(workout.intensity)}</td>
-    </tr>`).join('');
+  const metricHtml = metricRows.map(([name, value, note]) =>
+    '<tr><td class="strong">' + escapeHtml(name) + '</td><td class="value">' + escapeHtml(value) + '</td><td>' + escapeHtml(note) + '</td></tr>'
+  ).join('');
+  const trendHtml = trendRows.map(([name, value]) =>
+    '<tr><td class="strong">' + escapeHtml(name) + '</td><td>' + escapeHtml(value) + '</td></tr>'
+  ).join('');
+  const workoutHtml = workouts.length
+    ? workouts.slice(0, 12).map((workout) =>
+      '<tr><td class="strong">' + escapeHtml(workout.focus || workout.type) + '</td><td>' +
+      escapeHtml(new Date(workout.date).toLocaleDateString()) + '</td><td>' +
+      escapeHtml(String(workout.durationMin)) + ' min</td><td>' +
+      escapeHtml(workout.intensity) + '</td><td>' +
+      escapeHtml(String(workout.exercises.length)) + '</td></tr>'
+    ).join('')
+    : '<tr><td colspan="5" class="empty">No completed workouts in this period.</td></tr>';
 
   return `<!doctype html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  @page { size: A4; margin: 18mm; }
+  @page { size: A4; margin: 14mm 14mm 16mm; }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #030708; color: #F5FBFC; }
-  .page { padding: 8px; }
-  .brand { border-bottom: 1px solid #0B3A3D; padding-bottom: 18px; margin-bottom: 24px; }
-  .logo { font-size: 28px; font-weight: 800; letter-spacing: 1px; color: #00E5FF; }
-  .tagline { margin-top: 5px; color: #A9B8BA; font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; }
-  .meta { margin-top: 18px; color: #A9B8BA; font-size: 12px; }
-  h1 { font-size: 24px; margin: 0 0 6px; }
-  h2 { font-size: 14px; color: #00E5FF; letter-spacing: 1.2px; margin: 26px 0 12px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .card { border: 1px solid #0B3A3D; background: #062326; border-radius: 12px; padding: 14px; }
-  .label { color: #829294; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
-  .value { color: #FFFFFF; font-size: 22px; font-weight: 700; margin-top: 5px; }
-  table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  th, td { text-align: left; padding: 9px 7px; border-bottom: 1px solid #173A3D; }
-  th { color: #829294; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
-  td { color: #D6E0E1; }
-  .footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #0B3A3D; color: #829294; font-size: 9px; line-height: 1.5; }
-  .accent { color: #00E5FF; }
+  body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: #111111; background: #FFFFFF; font-size: 10.5px; }
+  .page { width: 100%; }
+  .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid #111111; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .logo { width: 42px; height: 42px; object-fit: contain; }
+  .brand-name { font-size: 21px; font-weight: 800; letter-spacing: 1px; }
+  .tagline { color: #555555; font-size: 9px; margin-top: 3px; letter-spacing: .7px; }
+  .report-meta { text-align: right; font-size: 9px; color: #555555; line-height: 1.6; }
+  h1 { font-size: 23px; margin: 24px 0 4px; letter-spacing: -.3px; }
+  .subtitle { color: #555555; font-size: 10px; margin-bottom: 20px; }
+  h2 { font-size: 10px; letter-spacing: 1.5px; margin: 22px 0 8px; padding-bottom: 6px; border-bottom: 1px solid #222222; }
+  table { width: 100%; border-collapse: collapse; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  th { background: #111111; color: #FFFFFF; text-align: left; padding: 8px 7px; font-size: 8.5px; letter-spacing: .7px; text-transform: uppercase; }
+  td { padding: 8px 7px; border-bottom: 1px solid #D8D8D8; vertical-align: top; }
+  tbody tr:nth-child(even) { background: #F7F7F7; }
+  .strong { font-weight: 700; color: #111111; }
+  .value { font-weight: 700; }
+  .empty { color: #777777; text-align: center; padding: 16px; }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .summary-card { border: 1px solid #CCCCCC; padding: 10px; min-height: 55px; }
+  .summary-label { color: #666666; font-size: 8px; text-transform: uppercase; letter-spacing: .8px; }
+  .summary-value { font-size: 17px; font-weight: 800; margin-top: 4px; }
+  .notice { margin-top: 20px; border: 1px solid #AAAAAA; padding: 10px; font-size: 9px; line-height: 1.5; }
+  .footer { margin-top: 24px; padding-top: 9px; border-top: 1px solid #222222; color: #666666; font-size: 8px; line-height: 1.5; display: flex; justify-content: space-between; gap: 15px; }
+  .footer-brand { color: #111111; font-weight: 800; }
 </style>
 </head>
 <body>
 <div class="page">
-  <div class="brand">
-    <div class="logo">AURASYNC+</div>
-    <div class="tagline">Understand Your Body. Train Smarter.</div>
-    <div class="meta">Fitness Intelligence Report · Last ${range} days · ${escapeHtml(source)}</div>
+  <div class="header">
+    <div class="brand">
+      <img class="logo" src="${logoUrl}" />
+      <div>
+        <div class="brand-name">AURASYNC+</div>
+        <div class="tagline">UNDERSTAND YOUR BODY. TRAIN SMARTER.</div>
+      </div>
+    </div>
+    <div class="report-meta">
+      FITNESS INTELLIGENCE REPORT<br>
+      LAST ${range} DAYS<br>
+      ${escapeHtml(source)}
+    </div>
   </div>
-  <h1>Personal Fitness Intelligence</h1>
-  <div class="meta">Generated ${escapeHtml(new Date().toLocaleString())}</div>
 
-  <h2>HEALTH SNAPSHOT</h2>
-  <div class="grid">
-    <div class="card"><div class="label">Average HRV</div><div class="value">${rows.length ? avgHrv + ' ms' : '—'}</div></div>
-    <div class="card"><div class="label">Average Sleep</div><div class="value">${rows.length ? avgSleep + ' h' : '—'}</div></div>
-    <div class="card"><div class="label">Average Stress</div><div class="value">${rows.length ? avgStress + '/100' : '—'}</div></div>
-    <div class="card"><div class="label">Average Training Load</div><div class="value">${rows.length ? avgLoad + '/100' : '—'}</div></div>
+  <h1>Personal Fitness Intelligence Report</h1>
+  <div class="subtitle">Generated ${escapeHtml(new Date().toLocaleString())}</div>
+
+  <div class="summary">
+    <div class="summary-card"><div class="summary-label">Health Entries</div><div class="summary-value">${rows.length}</div></div>
+    <div class="summary-card"><div class="summary-label">Completed Workouts</div><div class="summary-value">${workouts.length}</div></div>
   </div>
 
-  <h2>TREND SUMMARY</h2>
-  <table><thead><tr><th>Signal</th><th>Trend</th></tr></thead><tbody>
-    ${trendRows.map(([label, value]) => `<tr><td>${escapeHtml(label)}</td><td class="accent">${escapeHtml(value)}</td></tr>`).join('')}
-  </tbody></table>
+  <h2>01 · HEALTH SNAPSHOT</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>Value</th><th>Context</th></tr></thead>
+    <tbody>${metricHtml}</tbody>
+  </table>
 
-  <h2>TRAINING HISTORY</h2>
-  <table><thead><tr><th>Workout</th><th>Date</th><th>Duration</th><th>Intensity</th></tr></thead><tbody>
-    ${workoutRows || '<tr><td colspan="4">No completed workouts in this period.</td></tr>'}
-  </tbody></table>
+  <h2>02 · TREND SUMMARY</h2>
+  <table>
+    <thead><tr><th>Signal</th><th>Observed Trend</th></tr></thead>
+    <tbody>${trendHtml}</tbody>
+  </table>
+
+  <h2>03 · TRAINING HISTORY</h2>
+  <table>
+    <thead><tr><th>Workout</th><th>Date</th><th>Duration</th><th>Intensity</th><th>Exercises</th></tr></thead>
+    <tbody>${workoutHtml}</tbody>
+  </table>
+
+  <div class="notice">
+    <strong>AuraSync+ responsible fitness intelligence:</strong>
+    This report summarizes fitness and wellness signals recorded in the selected period. It is not a medical report, medical measurement, diagnosis, or treatment recommendation.
+  </div>
 
   <div class="footer">
-    <strong class="accent">AuraSync+</strong> · The Unified Biometric &amp; Gym Intelligence Ecosystem.<br>
-    This report summarizes fitness and wellness signals. It is not medical advice, a medical measurement, diagnosis, or treatment recommendation.
+    <div><span class="footer-brand">AuraSync+</span> · The Unified Biometric &amp; Gym Intelligence Ecosystem.</div>
+    <div>Data source: ${escapeHtml(source)}</div>
   </div>
 </div>
 </body>

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
@@ -11,8 +11,9 @@ const FOCUSES=['Chest','Back','Shoulders','Arms','Legs','Core','Full Body','Reco
 export default function WorkoutPlanBuilderScreen(){
  const [daysPerWeek,setDaysPerWeek]=useState(4);
  const [plan,setPlan]=useState(()=>DAYS.map((day,index)=>({day,focus:index<4?FOCUSES[index]:'Recovery / Rest'})));
+ useEffect(()=>{AsyncStorage.getItem('aurasync_7day_plan').then(raw=>{if(!raw)return;try{const saved=JSON.parse(raw);if(Array.isArray(saved.days))setPlan(saved.days);if(typeof saved.daysPerWeek==='number')setDaysPerWeek(saved.daysPerWeek);}catch{}})},[]);
  const cycle=(index:number)=>setPlan(current=>current.map((item,i)=>i===index?{...item,focus:FOCUSES[(FOCUSES.indexOf(item.focus as typeof FOCUSES[number])+1)%FOCUSES.length]}:item));
- const save=async()=>{await AsyncStorage.setItem('aurasync_7day_plan',JSON.stringify({daysPerWeek,days:plan}));};
+ const save=async()=>{await AsyncStorage.setItem('aurasync_7day_plan',JSON.stringify({daysPerWeek,days:plan}));router.back();};
  return <Screen contentStyle={styles.content}><View style={styles.header}><Pressable onPress={()=>router.back()}><Ionicons name="arrow-back" size={24} color={colors.cyan}/></Pressable><View style={styles.headerCopy}><Text style={styles.eyebrow}>TRAINING PLAN</Text><Text style={styles.title}>My 7-Day Plan</Text></View></View>
  <Text style={styles.subtitle}>Choose how many days you train. Tap a day to change its focus.</Text><Text style={styles.label}>TRAINING DAYS / WEEK</Text>
  <View style={styles.selector}>{[2,3,4,5,6,7].map(n=><Pressable key={n} onPress={()=>setDaysPerWeek(n)} style={[styles.dayButton,daysPerWeek===n&&styles.active]}><Text style={[styles.dayText,daysPerWeek===n&&styles.activeText]}>{n}</Text></Pressable>)}</View>

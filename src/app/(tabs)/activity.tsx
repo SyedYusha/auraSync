@@ -133,6 +133,7 @@ export default function ActivityScreen() {
         <Ionicons name="chevron-forward" size={20} color={colors.cyan} />
       </Pressable>
 
+      <Pressable onPress={() => router.push('/reports')} style={styles.buildButton}><Text style={styles.buildButtonText}>View Reports</Text><Ionicons name="analytics-outline" size={18} color={colors.cyan} /></Pressable>
       <Pressable onPress={() => router.push('/manual-health')} style={styles.buildButton}><Text style={styles.buildButtonText}>Enter Health Data</Text><Ionicons name="create-outline" size={18} color={colors.cyan} /></Pressable>
       <Pressable onPress={() => router.push('/workout-builder')} style={styles.buildButton}><Text style={styles.buildButtonText}>Build a Workout</Text><Ionicons name="chevron-forward" size={18} color={colors.cyan} /></Pressable>
       <Text style={styles.disclaimer}>AuraSync+ is a fitness and wellness prototype, not a medical device or medical advice.</Text>

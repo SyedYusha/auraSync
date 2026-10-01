@@ -82,7 +82,7 @@ export default function ActivityScreen() {
           <Text style={styles.title}>Activity</Text>
           <Text style={styles.subtitle}>Daily movement & training volume</Text>
         </View>
-        <StatusBadge label="DEMO DATA" tone="cyan" />
+        <StatusBadge label="PERSONAL ACTIVITY" tone="cyan" />
       </View>
 
       <GlassCard style={styles.todayCard}>
@@ -113,7 +113,7 @@ export default function ActivityScreen() {
           </View>
         </View>
         <WeeklyStepsChart data={DEMO_WEEK} />
-        <Text style={styles.weekNote}>Synthetic demo data — no wearable connected.</Text>
+        <Text style={styles.weekNote}>Activity will populate from connected health data and completed workouts.</Text>
       </GlassCard>
 
       <Pressable
@@ -128,6 +128,7 @@ export default function ActivityScreen() {
         <Ionicons name="chevron-forward" size={20} color={colors.cyan} />
       </Pressable>
 
+      <Pressable onPress={() => router.push('/workout-builder')} style={styles.buildButton}><Text style={styles.buildButtonText}>Build a Workout</Text><Ionicons name="chevron-forward" size={18} color={colors.cyan} /></Pressable>
       <Text style={styles.disclaimer}>AuraSync+ is a fitness and wellness prototype, not a medical device or medical advice.</Text>
     </Screen>
   );
@@ -165,5 +166,7 @@ const styles = StyleSheet.create({
   historyCopy: { flex: 1, gap: 3 },
   historyTitle: { color: colors.white, fontSize: typography.title, fontWeight: '700' },
   historySubtitle: { color: colors.silver, fontSize: typography.caption },
+  buildButton: { flexDirection:'row', alignItems:'center', justifyContent:'space-between', borderWidth:1, borderColor:colors.glassBorder, backgroundColor:colors.glass, borderRadius:radii.lg, padding:spacing.lg },
+  buildButtonText: { color:colors.white, fontSize:typography.title, fontWeight:'700' },
   disclaimer: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center' },
 });

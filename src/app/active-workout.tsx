@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -32,36 +33,52 @@ export default function ActiveWorkoutScreen() {
   const [completedSets, setCompletedSets] = useState<number[]>([]);
   const [isFinishing, setIsFinishing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [customPlan, setCustomPlan] = useState<typeof plan>(null);
   const finishedRef = useRef(false);
 
   useEffect(() => {
-    if (!plan) {
-      return;
-    }
-    const timeout = setTimeout(() => setCompletedSets(plan.exercises.map(() => 0)), 0);
-    return () => clearTimeout(timeout);
-  }, [plan]);
+    const loadCustom = async () => {
+      const raw = await AsyncStorage.getItem('aurasync_active_custom_workout');
+      if (!raw) return;
+      try {
+        const items = JSON.parse(raw) as { name: string; sets: number; reps: number; category: string }[];
+        if (!items.length) return;
+        setCustomPlan({ title: 'Custom Workout', intensity: 'Moderate', durationMin: Math.max(15, items.length * 8), focus: items.map(x => x.category).filter((v,i,a)=>a.indexOf(v)===i).join(' • '), reason: 'Built by you.', recoveryTip: 'Adjust intensity based on how you feel.', exercises: items, isFallback: false });
+      } catch {}
+    };
+    void loadCustom();
+  }, []);
+
+  const activePlan = customPlan ?? plan;
 
   useEffect(() => {
-    if (!plan || isPaused || isFinishing) {
+    if (!activePlan) {
+      return;
+    }
+    const timeout = setTimeout(() => setCompletedSets(activePlan.exercises.map(() => 0)), 0);
+    return () => clearTimeout(timeout);
+  }, [activePlan]);
+
+  useEffect(() => {
+    if (!activePlan || isPaused || isFinishing) {
       return;
     }
     const timer = setInterval(() => {
       setElapsedSeconds((current) => current + 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, [plan, isPaused, isFinishing]);
+  }, [activePlan, isPaused, isFinishing]);
 
   const totals = useMemo(() => {
-    if (!plan) {
+    if (!activePlan) {
       return { totalSets: 0, completedTotal: 0 };
     }
-    const totalSets = plan.exercises.reduce((total, exercise) => total + exercise.sets, 0);
+    const totalSets = activePlan.exercises.reduce((total, exercise) => total + exercise.sets, 0);
     const completedTotal = completedSets.reduce((total, count) => total + count, 0);
     return { totalSets, completedTotal };
-  }, [plan, completedSets]);
+  }, [activePlan, completedSets]);
 
-  if (planStatus === 'loading' || !plan || completedSets.length !== plan.exercises.length) {
+  if (planStatus === 'loading' || !activePlan || completedSets.length !== activePlan.exercises.length) {
     return (
       <Screen scroll={false}>
         <LoadingState label="Preparing your session..." />
@@ -69,7 +86,7 @@ export default function ActiveWorkoutScreen() {
     );
   }
 
-  const currentExercise = plan.exercises[exerciseIndex] ?? plan.exercises[0];
+  const currentExercise = activePlan.exercises[exerciseIndex] ?? activePlan.exercises[0];
   if (!currentExercise) {
     return (
       <Screen scroll={false}>
@@ -77,7 +94,7 @@ export default function ActiveWorkoutScreen() {
       </Screen>
     );
   }
-  const nextExercise = plan.exercises[exerciseIndex + 1] ?? null;
+  const nextExercise = activePlan.exercises[exerciseIndex + 1] ?? null;
   const currentCompleted = completedSets[exerciseIndex] ?? 0;
   const setsRemaining = currentExercise.sets - currentCompleted;
   const allSetsDone = totals.completedTotal >= totals.totalSets;
@@ -90,7 +107,7 @@ export default function ActiveWorkoutScreen() {
   };
 
   const handleNextExercise = () => {
-    if (exerciseIndex < plan.exercises.length - 1) {
+    if (exerciseIndex < activePlan.exercises.length - 1) {
       setExerciseIndex((current) => current + 1);
     }
   };
@@ -110,12 +127,12 @@ export default function ActiveWorkoutScreen() {
       await workoutService.saveWorkout(user.id, {
         id: `w-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`,
         date: new Date().toISOString(),
-        type: plan.title,
+        type: activePlan.title,
         durationMin,
-        intensity: plan.intensity,
-        focus: plan.focus,
+        intensity: activePlan.intensity,
+        focus: activePlan.focus,
         calories: Math.round(durationMin * multiplier),
-        exercises: plan.exercises,
+        exercises: activePlan.exercises,
         status,
       });
     } catch {
@@ -131,7 +148,7 @@ export default function ActiveWorkoutScreen() {
         <Ionicons name="close" size={26} color={colors.silver} onPress={handleFinish} accessibilityLabel="Finish workout" />
         <View style={styles.headerCopy}>
           <Text style={styles.eyebrow}>ACTIVE WORKOUT</Text>
-          <Text style={styles.title}>{plan.title}</Text>
+          <Text style={styles.title}>{activePlan.title}</Text>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -195,9 +212,9 @@ export default function ActiveWorkoutScreen() {
           accessibilityRole="button"
           accessibilityLabel="Next exercise"
           onPress={handleNextExercise}
-          disabled={exerciseIndex >= plan.exercises.length - 1}
-          style={[styles.secondaryButton, exerciseIndex >= plan.exercises.length - 1 && styles.secondaryDisabled]}>
-          <Text style={[styles.secondaryLabel, exerciseIndex >= plan.exercises.length - 1 && styles.secondaryLabelDisabled]}>Next Exercise</Text>
+          disabled={exerciseIndex >= activePlan.exercises.length - 1}
+          style={[styles.secondaryButton, exerciseIndex >= activePlan.exercises.length - 1 && styles.secondaryDisabled]}>
+          <Text style={[styles.secondaryLabel, exerciseIndex >= activePlan.exercises.length - 1 && styles.secondaryLabelDisabled]}>Next Exercise</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"

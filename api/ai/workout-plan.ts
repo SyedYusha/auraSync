@@ -25,6 +25,9 @@ const SYSTEM_PROMPT = `You are the AuraSync+ Workout Planner. Design one practic
 RULES:
 - Base the session on the supplied recovery score, HRV, sleep, stress, training load, fitness goal, fitness level and recent workout context.
 - Higher recovery can support higher intensity; lower recovery should reduce intensity and volume.
+- Treat recent workouts as a rotation constraint: avoid repeating the same primary muscle group on consecutive sessions unless recovery/context clearly supports it.
+- Prefer a different muscle group when the recent history shows that a group was trained in the last 1–2 sessions.
+- Match exercise selection to the stated focus and goal; do not mix unrelated muscle groups just to fill the exercise count.
 - Use only exercises from the supplied AuraSync+ exercise library.
 - Do not invent biometric measurements.
 - Do not diagnose disease or provide medical advice.
@@ -108,7 +111,7 @@ Recent Workouts: ${body.recentWorkouts || 'No recent workouts recorded.'}
 Allowed AuraSync+ exercises:
 ${EXERCISE_LIBRARY.map((exercise) => exercise.name).join(', ')}
 
-Design today's training session.`,
+Design today's training session. Recent training history is a hard input: use it to avoid unnecessary consecutive muscle-group repetition.`,
       temperature: 0.7,
       maxTokens: 900,
     });

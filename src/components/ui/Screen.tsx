@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import type { PropsWithChildren } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '@/theme';
@@ -13,15 +13,18 @@ interface ScreenProps extends PropsWithChildren {
 }
 
 export function Screen({ children, scroll = true, refreshing = false, onRefresh, contentStyle }: ScreenProps) {
+  const { width } = useWindowDimensions();
+  const horizontalPadding = width < 360 ? 14 : width < 768 ? 18 : 24;
+  const contentWidthStyle = width >= 900 ? styles.wideContent : undefined;
   const content = scroll ? (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, contentStyle]}
+      contentContainerStyle={[styles.scrollContent, { paddingHorizontal: horizontalPadding }, contentWidthStyle, contentStyle]}
       showsVerticalScrollIndicator={false}
       refreshControl={onRefresh ? <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.cyan} /> : undefined}>
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.fixedContent, contentStyle]}>{children}</View>
+    <View style={[styles.fixedContent, { paddingHorizontal: horizontalPadding }, contentWidthStyle, contentStyle]}>{children}</View>
   );
 
   return (
@@ -39,7 +42,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.obsidian },
   safeArea: { flex: 1 },
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 132, gap: spacing.lg },
-  fixedContent: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  fixedContent: { flex: 1, paddingTop: spacing.md },
+  wideContent: { width: '100%', maxWidth: 960, alignSelf: 'center' },
   glow: {
     position: 'absolute',
     width: 280,

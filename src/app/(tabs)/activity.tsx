@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700' },
   subtitle: { color: colors.silver, fontSize: typography.caption, marginTop: 3 },
   todayCard: { gap: spacing.md },
-  todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  todayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   sectionTitle: { color: colors.white, fontSize: typography.title, fontWeight: '700', letterSpacing: 0.4 },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCell: { flexBasis: '47%', flexGrow: 1, minWidth: 130, backgroundColor: 'rgba(6, 35, 38, 0.55)', borderRadius: radii.sm, padding: spacing.sm, alignItems: 'center', gap: 4 },

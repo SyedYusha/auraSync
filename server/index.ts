@@ -9,7 +9,13 @@ dotenv.config({ path: '../.env' });
 const app = express();
 // Allow localhost plus private LAN IPs so devices on the same Wi-Fi (phone browsers,
 // Expo Go web views) can reach the server during local development
-const corsOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2})(:\d+)?$/;
+const allowedWebOrigin = process.env.WEB_ORIGIN?.replace(/\/+$/, '');
+const corsOrigin = (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
+  if (!origin) return callback(null, true);
+  const localOrigin = /^https?:\\/\\/(localhost|127\\.0\\.1|10(\\.\\d+){3}|192\\.168(\\.\\d+){2}|172\\.(1[6-9]|2\\d|3[01])(\\.\\d+){2})(:\\d+)?$/;
+  if (localOrigin.test(origin) || (allowedWebOrigin && origin === allowedWebOrigin)) return callback(null, true);
+  return callback(new Error('CORS origin not allowed'));
+};
 app.use(cors({ origin: corsOrigin }));
 app.use(express.json());
 

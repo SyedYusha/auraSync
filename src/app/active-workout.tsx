@@ -78,7 +78,7 @@ export default function ActiveWorkoutScreen() {
     return { totalSets, completedTotal };
   }, [activePlan, completedSets]);
 
-  if (planStatus === 'loading' || !activePlan || completedSets.length !== activePlan.exercises.length) {
+  if ((!customPlan && planStatus === 'loading') || !activePlan || completedSets.length !== activePlan.exercises.length) {
     return (
       <Screen scroll={false}>
         <LoadingState label="Preparing your session..." />
@@ -120,7 +120,7 @@ export default function ActiveWorkoutScreen() {
     setIsFinishing(true);
 
     const durationMin = Math.max(1, Math.round(elapsedSeconds / 60));
-    const multiplier = CALORIES_PER_MINUTE[plan.intensity.toLowerCase()] ?? 11;
+    const multiplier = CALORIES_PER_MINUTE[activePlan.intensity.toLowerCase()] ?? 11;
     const status: WorkoutStatus = allSetsDone ? 'Completed' : 'Partial';
 
     try {
@@ -172,7 +172,7 @@ export default function ActiveWorkoutScreen() {
 
       <GlassCard style={styles.currentCard}>
         <View style={styles.currentHeader}>
-          <StatusBadge label={`EXERCISE ${exerciseIndex + 1} OF ${plan.exercises.length}`} tone="cyan" />
+          <StatusBadge label={`EXERCISE ${exerciseIndex + 1} OF ${activePlan.exercises.length}`} tone="cyan" />
           {allSetsDone ? <StatusBadge label="ALL SETS DONE" tone="good" /> : null}
         </View>
         <Text style={styles.currentName}>{currentExercise.name}</Text>

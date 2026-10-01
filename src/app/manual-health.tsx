@@ -27,6 +27,7 @@ const fields: readonly { key: Field; label: string; placeholder: string; unit: s
 
 export default function ManualHealthScreen() {
   const { user, profile } = useAuth();
+  const { refresh } = useHealthData();
   const [values, setValues] = useState<Record<Field, string>>({
     heartRate: '', hrv: '', sleep: '', sleepScore: '', stress: '', trainingLoad: '',
     steps: '', caloriesBurned: '', activeMinutes: '',

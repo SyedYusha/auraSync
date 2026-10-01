@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   statLabel: { color: colors.silver, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   statDetail: { color: colors.muted, fontSize: 10 },
   weekCard: { gap: spacing.md },
-  weekHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  weekHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm, flexWrap: 'wrap' },
   weekTotals: { alignItems: 'flex-end', gap: 2 },
   weekTotal: { color: colors.cyan, fontSize: typography.body, fontWeight: '700' },
   weekAverage: { color: colors.muted, fontSize: typography.caption },

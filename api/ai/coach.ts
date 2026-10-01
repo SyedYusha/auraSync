@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
   try {
     const result = await generateAIJSON({
       system: SYSTEM_PROMPT,
-      user: \`${body.healthContext}${demoNote}\\n\\nUser Question: ${body.question}\`,
+      user: `${body.healthContext}${demoNote}\n\nUser Question: ${body.question}`,
       temperature: 0.7,
       maxTokens: 800,
     });

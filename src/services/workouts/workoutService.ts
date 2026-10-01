@@ -6,60 +6,6 @@ import { supabase } from '../auth/supabaseClient';
 
 const localKey = (userId: string) => `aurasync_workouts_${userId}`;
 
-const seedWorkouts: readonly WorkoutRecord[] = [
-  {
-    id: 'seed-2026-08-31',
-    date: '2026-08-31T18:02:00.000Z',
-    type: 'Upper Body Strength',
-    durationMin: 52,
-    intensity: 'High',
-    focus: 'Chest, Back, Shoulders',
-    calories: 612,
-    status: 'Completed',
-    exercises: [
-      { name: 'Bench Press', sets: 4, reps: 8 },
-      { name: 'Lat Pulldown', sets: 4, reps: 10 },
-      { name: 'Shoulder Press', sets: 3, reps: 10 },
-      { name: 'Seated Cable Row', sets: 3, reps: 10 },
-      { name: 'Lateral Raises', sets: 3, reps: 12 },
-    ],
-  },
-  {
-    id: 'seed-2026-08-29',
-    date: '2026-08-29T17:10:00.000Z',
-    type: 'Lower Body',
-    durationMin: 48,
-    intensity: 'Moderate',
-    focus: 'Quads, Glutes, Hamstrings',
-    calories: 548,
-    status: 'Completed',
-    exercises: [
-      { name: 'Back Squat', sets: 4, reps: 8 },
-      { name: 'Romanian Deadlift', sets: 4, reps: 10 },
-      { name: 'Leg Press', sets: 3, reps: 12 },
-      { name: 'Walking Lunges', sets: 3, reps: 12 },
-      { name: 'Standing Calf Raise', sets: 3, reps: 15 },
-    ],
-  },
-  {
-    id: 'seed-2026-08-27',
-    date: '2026-08-27T18:25:00.000Z',
-    type: 'Full Body',
-    durationMin: 55,
-    intensity: 'High',
-    focus: 'Full Body Conditioning',
-    calories: 640,
-    status: 'Completed',
-    exercises: [
-      { name: 'Deadlift', sets: 4, reps: 6 },
-      { name: 'Incline Dumbbell Press', sets: 4, reps: 10 },
-      { name: 'Goblet Squat', sets: 3, reps: 12 },
-      { name: 'Bent-Over Row', sets: 3, reps: 10 },
-      { name: 'Hanging Knee Raise', sets: 3, reps: 15 },
-    ],
-  },
-];
-
 interface WorkoutRow {
   id: string;
   date: string;
@@ -97,10 +43,7 @@ export const workoutService = {
       }));
     }
     const raw = await AsyncStorage.getItem(localKey(userId));
-    if (!raw) {
-      await AsyncStorage.setItem(localKey(userId), JSON.stringify(seedWorkouts));
-      return seedWorkouts;
-    }
+    if (!raw) return [];
     return JSON.parse(raw) as WorkoutRecord[];
   },
 

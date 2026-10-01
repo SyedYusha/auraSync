@@ -34,7 +34,7 @@ interface StatConfig {
 
 export default function ActivityScreen() {
   const { user } = useAuth();
-  const { status: healthStatus, snapshot, error: healthError, refresh } = useHealthData();
+  const { status: healthStatus, snapshot, error: healthError, refresh, isDemoMode, activityHistory } = useHealthData();
   const [workoutCount, setWorkoutCount] = useState<number | null>(null);
 
   const loadWorkouts = useCallback(async () => {
@@ -56,13 +56,14 @@ export default function ActivityScreen() {
 
   const trainingLoad = snapshot?.metrics.trainingLoad.value ?? null;
 
+  const latestManual = activityHistory[0];
   const stats = useMemo<readonly StatConfig[]>(() => [
-    { icon: 'footsteps-outline', label: 'Steps', value: DEMO_TODAY.steps.toLocaleString('en-US'), detail: 'today' },
-    { icon: 'flame-outline', label: 'Calories Burned', value: `${DEMO_TODAY.caloriesBurned}`, detail: 'kcal today' },
-    { icon: 'time-outline', label: 'Active Minutes', value: `${DEMO_TODAY.activeMinutes}`, detail: 'min today' },
+    { icon: 'footsteps-outline', label: 'Steps', value: isDemoMode ? DEMO_TODAY.steps.toLocaleString('en-US') : latestManual ? latestManual.steps.toLocaleString('en-US') : '—', detail: isDemoMode ? 'today' : latestManual ? 'self-entered' : 'not recorded' },
+    { icon: 'flame-outline', label: 'Calories Burned', value: isDemoMode ? `${DEMO_TODAY.caloriesBurned}` : latestManual ? `${latestManual.caloriesBurned}` : '—', detail: 'kcal' },
+    { icon: 'time-outline', label: 'Active Minutes', value: isDemoMode ? `${DEMO_TODAY.activeMinutes}` : latestManual ? `${latestManual.activeMinutes}` : '—', detail: 'min' },
     { icon: 'barbell-outline', label: 'Training Load', value: trainingLoad !== null ? `${trainingLoad}/100` : '—', detail: 'current' },
     { icon: 'checkmark-done-outline', label: 'Workouts Completed', value: workoutCount !== null ? `${workoutCount}` : '—', detail: 'all time' },
-  ], [trainingLoad, workoutCount]);
+  ], [isDemoMode, latestManual, trainingLoad, workoutCount]);
 
   if (healthStatus === 'error') {
     return (
@@ -72,8 +73,9 @@ export default function ActivityScreen() {
     );
   }
 
-  const weeklyTotal = DEMO_WEEK.reduce((total, day) => total + day.steps, 0);
-  const weeklyAverage = Math.round(weeklyTotal / DEMO_WEEK.length);
+  const chartData = isDemoMode ? DEMO_WEEK : activityHistory.slice(0, 7).reverse().map((entry, index) => ({ day: new Date(entry.capturedAt).toLocaleDateString(undefined, { weekday: 'short' }), steps: entry.steps }));
+  const weeklyTotal = chartData.reduce((total, day) => total + day.steps, 0);
+  const weeklyAverage = chartData.length ? Math.round(weeklyTotal / chartData.length) : 0;
 
   return (
     <Screen onRefresh={() => { void refresh(); void loadWorkouts(); }}>
@@ -88,7 +90,7 @@ export default function ActivityScreen() {
       <GlassCard style={styles.todayCard}>
         <View style={styles.todayHeader}>
           <Text style={styles.sectionTitle}>TODAY’S ACTIVITY</Text>
-          <StatusBadge label="SYNTHETIC DATA" tone="muted" />
+          <StatusBadge label={isDemoMode ? "SYNTHETIC DATA" : "PERSONAL DATA"} tone="muted" />
         </View>
         <View style={styles.statGrid}>
           {stats.map((stat) => (
@@ -112,8 +114,8 @@ export default function ActivityScreen() {
             <Text style={styles.weekAverage}>avg {weeklyAverage.toLocaleString('en-US')}/day</Text>
           </View>
         </View>
-        <WeeklyStepsChart data={DEMO_WEEK} />
-        <Text style={styles.weekNote}>Activity will populate from connected health data and completed workouts.</Text>
+        {chartData.length > 0 ? <WeeklyStepsChart data={chartData} /> : <Text style={styles.weekNote}>No activity data recorded yet. Enter your health data to start building charts.</Text>}
+        <Text style={styles.weekNote}>{isDemoMode ? "Demo activity for presentation." : "Self-entered activity is shown here until a health source is connected."}</Text>
       </GlassCard>
 
       <Pressable
@@ -128,7 +130,7 @@ export default function ActivityScreen() {
         <Ionicons name="chevron-forward" size={20} color={colors.cyan} />
       </Pressable>
 
-      <Pressable onPress={() => router.push('/workout-builder')} style={styles.buildButton}><Text style={styles.buildButtonText}>Build a Workout</Text><Ionicons name="chevron-forward" size={18} color={colors.cyan} /></Pressable>
+      <Pressable onPress={() => router.push('/manual-health')} style={styles.buildButton}><Text style={styles.buildButtonText}>Enter Health Data</Text><Ionicons name="create-outline" size={18} color={colors.cyan} /></Pressable>\n      <Pressable onPress={() => router.push('/workout-builder')} style={styles.buildButton}><Text style={styles.buildButtonText}>Build a Workout</Text><Ionicons name="chevron-forward" size={18} color={colors.cyan} /></Pressable>
       <Text style={styles.disclaimer}>AuraSync+ is a fitness and wellness prototype, not a medical device or medical advice.</Text>
     </Screen>
   );

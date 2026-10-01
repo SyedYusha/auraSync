@@ -21,7 +21,8 @@ export default function HealthScreen() {
 }
 
 function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { readonly snapshot: NonNullable<ReturnType<typeof useHealthData>['snapshot']>; readonly onRefresh: () => void; readonly isDemoMode: boolean; readonly activityHistory: readonly { capturedAt: string; hrv: number; sleep: number; sleepScore: number; stress: number; trainingLoad: number }[] }) {
-  const recovery = useRecovery(snapshot);
+  const hasHealthData = snapshot.sourceId !== 'none';
+  const recovery = hasHealthData ? useRecovery(snapshot) : null;
   const metrics = Object.values(snapshot.metrics);
 
   return (
@@ -35,13 +36,23 @@ function HealthContent({ snapshot, onRefresh, isDemoMode, activityHistory }: { r
       </View>
       <GlassCard style={styles.recoveryOverview}>
         <Text style={styles.overviewLabel}>RECOVERY</Text>
-        <View style={styles.scoreRow}>
-          <Text style={styles.score}>{recovery.score}</Text>
-          <View>
-            <Text style={styles.readiness}>{recovery.readiness}</Text>
-            <Text style={styles.fatigue}>Fatigue: {recovery.fatigueLevel}</Text>
+        {recovery ? (
+          <View style={styles.scoreRow}>
+            <Text style={styles.score}>{recovery.score}</Text>
+            <View>
+              <Text style={styles.readiness}>{recovery.readiness}</Text>
+              <Text style={styles.fatigue}>Fatigue: {recovery.fatigueLevel}</Text>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={styles.emptyRecovery}>
+            <Text style={styles.emptyScore}>—</Text>
+            <View style={styles.emptyRecoveryCopy}>
+              <Text style={styles.readiness}>Not enough data yet</Text>
+              <Text style={styles.fatigue}>Add or sync health data to calculate readiness.</Text>
+            </View>
+          </View>
+        )}
       </GlassCard>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>METRICS</Text>
@@ -66,6 +77,9 @@ const styles = StyleSheet.create({
   recoveryOverview: { gap: spacing.xs },
   overviewLabel: { color: colors.cyan, fontSize: typography.label, letterSpacing: 0.7, fontWeight: '800' },
   scoreRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  emptyRecovery: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  emptyRecoveryCopy: { flex: 1, gap: 3 },
+  emptyScore: { color: colors.muted, fontSize: 52, fontWeight: '300' },
   score: { color: colors.white, fontSize: 52, fontWeight: '300' },
   readiness: { color: colors.success, fontSize: typography.h2, fontWeight: '700' },
   fatigue: { color: colors.silver, fontSize: typography.caption, marginTop: 3 },

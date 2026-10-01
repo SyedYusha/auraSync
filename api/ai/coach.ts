@@ -42,7 +42,7 @@ ALWAYS respond with one valid JSON object and nothing else:
 function parseAIResponse(raw: string): AIRecommendation | null {
   try {
     let cleaned = raw.trim();
-    const codeBlock = cleaned.match(/\`\`\`(?:json)?\\s*([\\s\\S]*?)\`\`\`/);
+    const codeBlock = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlock?.[1]) cleaned = codeBlock[1].trim();
     const parsed = JSON.parse(cleaned) as Record<string, unknown>;
     const required = ['title','recommendation','reason','intensity','duration','focus','recoveryTip'];

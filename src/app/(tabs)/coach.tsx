@@ -68,7 +68,7 @@ Training Load: ${m.trainingLoad.value}
 Heart Rate: ${m.heartRate.value} ${m.heartRate.unit}
 Data Source: ${snapshot.sourceId}
 Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
-  }, [snapshot, recovery]);
+  }, [hasHealthData, snapshot, recovery]);
 
   const sendQuestion = useCallback(
     async (question: string) => {
@@ -87,7 +87,7 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
       setIsSending(true);
 
       try {
-        if (!recovery) {
+        if (!hasHealthData) {
           const fallbackText = 'I need some real fitness data before I can make a readiness-based recommendation. Add today’s health data or connect a supported health source first.';
           setMessages((current) =>
             current.map((m) =>
@@ -147,7 +147,7 @@ Synthetic Demo Data: ${snapshot.isSynthetic ? 'Yes' : 'No'}`;
         <View style={styles.contextCopy}>
           <Text style={styles.contextTitle}>Today’s readiness context</Text>
           <Text style={styles.contextText}>
-            {recovery ? `Recovery ${recovery.score} | ${recovery.readiness} | Sleep ${snapshot.metrics.sleep.value} hrs` : 'Connect health data to unlock readiness-based coaching.'}
+            {hasHealthData ? `Recovery ${recovery.score} | ${recovery.readiness} | Sleep ${snapshot.metrics.sleep.value} hrs` : 'Connect health data to unlock readiness-based coaching.'}
           </Text>
         </View>
       </GlassCard>

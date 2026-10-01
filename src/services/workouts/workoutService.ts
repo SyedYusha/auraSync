@@ -26,31 +26,46 @@ async function saveLocalWorkout(userId: string, record: WorkoutRecord): Promise<
 
 export const workoutService = {
   async getWorkouts(userId: string): Promise<readonly WorkoutRecord[]> {
+    const readLocal = async (): Promise<WorkoutRecord[]> => {
+      const raw = await AsyncStorage.getItem(localKey(userId));
+      if (!raw) return [];
+      try {
+        const parsed = JSON.parse(raw) as WorkoutRecord[];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    };
+
     if (supabase) {
-      const { data, error } = await supabase
-        .from('workouts')
-        .select('*, workout_exercises(*)')
-        .eq('user_id', userId)
-        .order('date', { ascending: false });
-      if (error) throw new Error(error.message);
-      if (!data) return [];
-      return (data as WorkoutRow[]).map((row) => ({
-        id: row.id,
-        date: row.date,
-        type: row.type,
-        durationMin: row.duration_min,
-        intensity: row.intensity,
-        focus: row.focus,
-        calories: row.calories,
-        status: row.status as WorkoutRecord['status'],
-        exercises: [...(row.workout_exercises ?? [])]
-          .sort((a, b) => a.position - b.position)
-          .map((exercise) => ({ name: exercise.name, sets: exercise.sets, reps: exercise.reps })),
-      }));
+      try {
+        const { data, error } = await supabase
+          .from('workouts')
+          .select('*, workout_exercises(*)')
+          .eq('user_id', userId)
+          .order('date', { ascending: false });
+        if (error) throw new Error(error.message);
+        if (data) {
+          return (data as WorkoutRow[]).map((row) => ({
+            id: row.id,
+            date: row.date,
+            type: row.type,
+            durationMin: row.duration_min,
+            intensity: row.intensity,
+            focus: row.focus,
+            calories: row.calories,
+            status: row.status as WorkoutRecord['status'],
+            exercises: [...(row.workout_exercises ?? [])]
+              .sort((a, b) => a.position - b.position)
+              .map((exercise) => ({ name: exercise.name, sets: exercise.sets, reps: exercise.reps })),
+          }));
+        }
+      } catch {
+        // Fall through to the local session store for offline/error resilience.
+      }
     }
-    const raw = await AsyncStorage.getItem(localKey(userId));
-    if (!raw) return [];
-    return JSON.parse(raw) as WorkoutRecord[];
+
+    return readLocal();
   },
 
   async saveWorkout(userId: string, record: WorkoutRecord): Promise<void> {

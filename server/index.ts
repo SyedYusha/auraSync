@@ -12,7 +12,7 @@ const app = express();
 const allowedWebOrigin = process.env.WEB_ORIGIN?.replace(/\/+$/, '');
 const corsOrigin = (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) => {
   if (!origin) return callback(null, true);
-  const localOrigin = /^https?:\\/\\/(localhost|127\\.0\\.1|10(\\.\\d+){3}|192\\.168(\\.\\d+){2}|172\\.(1[6-9]|2\\d|3[01])(\\.\\d+){2})(:\\d+)?$/;
+  const localOrigin = /^https?:\/\/(localhost|127\.0\.0\.1|10(\.\d+){3}|192\.168(\.\d+){2}|172\.(1[6-9]|2\d|3[01])(\.\d+){2})(:\d+)?$/;
   if (localOrigin.test(origin) || (allowedWebOrigin && origin === allowedWebOrigin)) return callback(null, true);
   return callback(new Error('CORS origin not allowed'));
 };

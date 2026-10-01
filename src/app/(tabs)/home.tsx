@@ -57,6 +57,7 @@ function HomeContent({ snapshot, onRefresh }: { readonly snapshot: HealthSnapsho
         isLoading={planStatus === 'loading' || !plan}
         onViewPlan={() => router.push('/workout-plan')}
       />
+      <View style={styles.builderLink}><Text style={styles.builderLinkText} onPress={() => router.push('/workout-builder')}>Build a custom workout →</Text></View>
       <RecoveryFactorList recovery={recovery} />
     </Screen>
   );
@@ -69,4 +70,6 @@ const styles = StyleSheet.create({
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.xs },
   sectionTitle: { color: colors.white, fontSize: typography.title, fontWeight: '700' },
   sectionNote: { color: colors.muted, fontSize: typography.caption },
+  builderLink: { alignItems: 'center', marginTop: -spacing.sm },
+  builderLinkText: { color: colors.cyan, fontSize: typography.caption, fontWeight: '700' },
 });

@@ -1,21 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { MembershipStateBadge, PaymentStateBadge } from '@/components/gym/MembershipBadge';
+import { NotificationCenterModal } from '@/components/gym/NotificationCenterModal';
 import { RiskBadge } from '@/components/gym/RiskBadge';
 import { SimulatedCheckInButton } from '@/components/gym/SimulatedCheckInButton';
 import { FadeIn, SkeletonBlock } from '@/components/gym/motion';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
-import { formatGymDate } from '@/domain/gym/format';
+import { GlobalFooter } from '@/components/ui/GlobalFooter';
+import { formatGymDate, formatGymDateTime } from '@/domain/gym/format';
 import { getMembershipState, getPaymentState } from '@/domain/gym/membership';
+import { notificationService } from '@/services/notifications/notificationService';
+import { useAuth } from '@/state/AuthProvider';
 import { useGymOwner } from '@/state/GymOwnerProvider';
 import { colors, radii, spacing, typography } from '@/theme';
 import type { ChurnInsight, GymMember, MembershipState, PaymentState } from '@/types/gym';
-
 import { exportCsvFile } from '@/utils/csvExport';
 
 type MembershipFilter = MembershipState | 'all';
@@ -38,10 +41,38 @@ const PAYMENT_FILTERS: readonly { readonly value: PaymentFilter; readonly label:
 ];
 
 export default function GymMembersScreen() {
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const { user } = useAuth();
   const { status, members, insights, checkedInTodayMemberIds, checkingInMemberId, error, refresh, simulateCheckIn } = useGymOwner();
   const [query, setQuery] = useState('');
   const [membershipFilter, setMembershipFilter] = useState<MembershipFilter>('all');
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+
+  const ownerUserId = user?.id ?? 'local-demo-gym-owner';
+
+  const checkUnread = useCallback(async () => {
+    try {
+      const count = await notificationService.getUnreadCount(ownerUserId);
+      setUnreadNotifs(count);
+    } catch {}
+  }, [ownerUserId]);
+
+  useEffect(() => {
+    let active = true;
+    notificationService
+      .getUnreadCount(ownerUserId)
+      .then((count) => {
+        if (active) setUnreadNotifs(count);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [ownerUserId]);
 
   const insightsByMemberId = useMemo(() => new Map(insights.map((insight) => [insight.memberId, insight])), [insights]);
 
@@ -54,8 +85,6 @@ export default function GymMembersScreen() {
       return true;
     });
   }, [members, membershipFilter, paymentFilter, query]);
-
-  const [isExporting, setIsExporting] = useState(false);
 
   const handleExportCsv = async () => {
     setIsExporting(true);
@@ -95,17 +124,30 @@ export default function GymMembersScreen() {
   }
 
   return (
-    <Screen onRefresh={() => void refresh()} contentStyle={styles.content}>
+    <Screen onRefresh={() => { void refresh(); void checkUnread(); }} contentStyle={styles.content}>
       <FadeIn>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.replace('/owner' as never)}>
             <Ionicons name="arrow-back" size={24} color={colors.cyan} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>GYM INTELLIGENCE DEMO</Text>
+            <Text style={styles.eyebrow}>GYM INTELLIGENCE</Text>
             <Text style={styles.title}>Members</Text>
           </View>
           <View style={styles.headerActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open Notifications"
+              onPress={() => setIsNotifOpen(true)}
+              style={styles.notifButton}
+            >
+              <Ionicons name="notifications-outline" size={20} color={colors.cyan} />
+              {unreadNotifs > 0 ? (
+                <View style={styles.notifBadge}>
+                  <Text style={styles.notifBadgeText}>{unreadNotifs}</Text>
+                </View>
+              ) : null}
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Export CSV"
@@ -116,7 +158,7 @@ export default function GymMembersScreen() {
               <Ionicons name="download-outline" size={15} color={colors.cyan} />
               <Text style={styles.exportBtnText}>{isExporting ? '...' : 'CSV'}</Text>
             </Pressable>
-            <StatusBadge label={`${members.length} DEMO`} tone="muted" />
+            <StatusBadge label={`${members.length} MEMBERS`} tone="muted" />
           </View>
         </View>
       </FadeIn>
@@ -164,10 +206,92 @@ export default function GymMembersScreen() {
       {visibleMembers.length === 0 ? (
         <GlassCard>
           <Text style={styles.emptyText}>
-            {members.length === 0 ? 'No demo members yet. Add your first member.' : 'No members match the current search or filters.'}
+            {members.length === 0 ? 'No members yet. Add your first member.' : 'No members match the current search or filters.'}
           </Text>
         </GlassCard>
+      ) : isDesktop ? (
+        /* Point 8: Actual Desktop Table */
+        <GlassCard padding={0} style={styles.tableCard}>
+          <View style={styles.tableHeaderRow}>
+            <Text style={[styles.thCell, { flex: 2 }]}>MEMBER</Text>
+            <Text style={[styles.thCell, { width: 100 }]}>STATUS</Text>
+            <Text style={[styles.thCell, { width: 110 }]}>MEMBERSHIP</Text>
+            <Text style={[styles.thCell, { width: 90 }]}>PAYMENT</Text>
+            <Text style={[styles.thCell, { width: 160 }]}>LAST CHECK-IN</Text>
+            <Text style={[styles.thCell, { width: 100 }]}>ATTENDANCE</Text>
+            <Text style={[styles.thCell, { width: 130, textAlign: 'right' }]}>ACTIONS</Text>
+          </View>
+
+          {visibleMembers.map((member, index) => {
+            const insight = insightsByMemberId.get(member.id);
+            const mState = getMembershipState(member);
+            const pState = getPaymentState(member);
+            const isLast = index === visibleMembers.length - 1;
+            const checkedInToday = checkedInTodayMemberIds.has(member.id);
+
+            return (
+              <View key={member.id} style={[styles.tableRow, !isLast && styles.tableRowBorder]}>
+                <View style={[styles.tdCell, { flex: 2, flexDirection: 'row', alignItems: 'center', gap: spacing.xs }]}>
+                  <View style={styles.avatarMini}>
+                    <Text style={styles.avatarMiniText}>{member.fullName.slice(0, 1).toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tableName} numberOfLines={1}>{member.fullName}</Text>
+                    <Text style={styles.tableSub} numberOfLines={1}>{member.email}</Text>
+                  </View>
+                </View>
+
+                <View style={[styles.tdCell, { width: 100 }]}>
+                  <MembershipStateBadge state={mState} />
+                </View>
+
+                <View style={[styles.tdCell, { width: 110 }]}>
+                  <Text style={styles.tableValueText}>{member.plan.replace(' Monthly', '')}</Text>
+                </View>
+
+                <View style={[styles.tdCell, { width: 90 }]}>
+                  <PaymentStateBadge state={pState} />
+                </View>
+
+                <View style={[styles.tdCell, { width: 160 }]}>
+                  <Text style={styles.tableSub}>
+                    {insight?.lastCheckInAt ? formatGymDateTime(insight.lastCheckInAt) : 'Never'}
+                  </Text>
+                </View>
+
+                <View style={[styles.tdCell, { width: 100 }]}>
+                  <Text style={styles.tableValueText}>
+                    {checkedInToday ? 'Today' : insight?.recentVisitsCount ? `${insight.recentVisitsCount} visits` : '—'}
+                  </Text>
+                </View>
+
+                <View style={[styles.tdCell, { width: 130, flexDirection: 'row', justifyContent: 'flex-end', gap: 6 }]}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`View ${member.fullName}`}
+                    onPress={() => router.push({ pathname: '/owner/members/[memberId]', params: { memberId: member.id } })}
+                    style={styles.actionBtnSmall}
+                  >
+                    <Text style={styles.actionBtnSmallText}>View</Text>
+                  </Pressable>
+                  {member.isActive ? (
+                    <Pressable
+                      disabled={checkedInToday || checkingInMemberId === member.id}
+                      onPress={() => void simulateCheckIn(member.id)}
+                      style={[styles.actionBtnSmall, checkedInToday && styles.actionBtnDone]}
+                    >
+                      <Text style={[styles.actionBtnSmallText, checkedInToday && styles.actionBtnDoneText]}>
+                        {checkingInMemberId === member.id ? '...' : checkedInToday ? 'In' : 'Check In'}
+                      </Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
+        </GlassCard>
       ) : (
+        /* Point 8: Mobile Stacked Cards */
         <View style={styles.list}>
           {visibleMembers.map((member, index) => (
             <MemberCard
@@ -183,6 +307,18 @@ export default function GymMembersScreen() {
           ))}
         </View>
       )}
+
+      <NotificationCenterModal
+        visible={isNotifOpen}
+        userId={ownerUserId}
+        onClose={() => setIsNotifOpen(false)}
+        onUpdated={() => {
+          void checkUnread();
+          void refresh();
+        }}
+      />
+
+      <GlobalFooter />
     </Screen>
   );
 }
@@ -244,12 +380,16 @@ function FilterChip({ label, active, onPress }: { readonly label: string; readon
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg },
+  content: { gap: spacing.lg, paddingBottom: spacing.xl },
   skeletonContent: { gap: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerCopy: { flex: 1 },
   eyebrow: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.7 },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700', marginTop: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  notifButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0, 229, 255, 0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line, position: 'relative' },
+  notifBadge: { position: 'absolute', top: -3, right: -3, backgroundColor: colors.cyan, borderRadius: radii.pill, paddingHorizontal: 4, paddingVertical: 1, minWidth: 15, alignItems: 'center', justifyContent: 'center' },
+  notifBadgeText: { color: colors.obsidian, fontSize: 9, fontWeight: '800' },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -297,7 +437,6 @@ const styles = StyleSheet.create({
   name: { color: colors.white, fontSize: typography.body, fontWeight: '700' },
   detail: { color: colors.muted, fontSize: typography.caption, lineHeight: 17 },
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   exportBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -313,4 +452,21 @@ const styles = StyleSheet.create({
   badgeWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   buttonWrap: { flexShrink: 1 },
   emptyText: { color: colors.silver, fontSize: typography.body, textAlign: 'center', lineHeight: 20 },
+
+  // Desktop Table
+  tableCard: { overflow: 'hidden' },
+  tableHeaderRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: 'rgba(255, 255, 255, 0.03)' },
+  thCell: { color: colors.muted, fontSize: typography.label, fontWeight: '700' },
+  tableRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
+  tableRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.line },
+  tdCell: { justifyContent: 'center' },
+  avatarMini: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.techTeal, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.cyan },
+  avatarMiniText: { color: colors.cyan, fontSize: 11, fontWeight: '800' },
+  tableName: { color: colors.white, fontSize: typography.body, fontWeight: '700' },
+  tableSub: { color: colors.silver, fontSize: typography.caption },
+  tableValueText: { color: colors.white, fontSize: typography.caption, fontWeight: '600' },
+  actionBtnSmall: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.sm, backgroundColor: 'rgba(0, 229, 255, 0.12)', borderWidth: 1, borderColor: colors.cyan },
+  actionBtnSmallText: { color: colors.cyan, fontSize: typography.caption, fontWeight: '700' },
+  actionBtnDone: { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: colors.line },
+  actionBtnDoneText: { color: colors.muted },
 });

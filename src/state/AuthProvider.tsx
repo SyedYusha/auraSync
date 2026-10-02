@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { authService } from '@/services/auth/authService';
 import { profileService } from '@/services/profile/profileService';
-import type { AppRole, AuthResult, AuthUser, MemberProfile } from '@/types/member';
+import type { AppRole, AuthResult, AuthUser, FitnessGoal, FitnessLevel, MemberProfile } from '@/types/member';
 
 export type AuthStatus = 'loading' | 'unauthenticated' | 'onboarding' | 'authenticated';
 
@@ -16,7 +16,12 @@ interface AuthContextValue {
   readonly isSaving: boolean;
   signIn(email: string, password: string): Promise<AuthResult>;
   signInDemo(role: DemoRole): Promise<AuthResult>;
-  signUp(email: string, password: string, fullName: string): Promise<AuthResult>;
+  signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    extra?: { phone?: string; fitnessGoal?: FitnessGoal; fitnessLevel?: FitnessLevel },
+  ): Promise<AuthResult>;
   resetPassword(email: string): Promise<AuthResult>;
   signOut(): Promise<void>;
   saveProfile(profile: MemberProfile): Promise<boolean>;
@@ -113,8 +118,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
   );
 
   const signUp = useCallback(
-    async (email: string, password: string, fullName: string): Promise<AuthResult> => {
-      const result = await authService.signUp(email, password, fullName);
+    async (
+      email: string,
+      password: string,
+      fullName: string,
+      extra?: { phone?: string; fitnessGoal?: FitnessGoal; fitnessLevel?: FitnessLevel },
+    ): Promise<AuthResult> => {
+      const result = await authService.signUp(email, password, fullName, extra);
       if (!result.ok) {
         return result;
       }

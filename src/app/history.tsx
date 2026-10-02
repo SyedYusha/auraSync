@@ -6,6 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, LoadingState, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
+import { GlobalFooter } from '@/components/ui/GlobalFooter';
 import { workoutService } from '@/services/workouts/workoutService';
 import { useAuth } from '@/state/AuthProvider';
 import { colors, spacing, typography } from '@/theme';
@@ -30,6 +31,7 @@ interface Summary {
   readonly count: number;
   readonly minutes: number;
   readonly calories: number;
+  readonly volume: number;
 }
 
 function summarise(workouts: readonly WorkoutRecord[], sinceMs: number): Summary {
@@ -38,6 +40,7 @@ function summarise(workouts: readonly WorkoutRecord[], sinceMs: number): Summary
     count: relevant.length,
     minutes: relevant.reduce((total, workout) => total + workout.durationMin, 0),
     calories: relevant.reduce((total, workout) => total + workout.calories, 0),
+    volume: relevant.reduce((total, workout) => total + (workout.totalVolume ?? 0), 0),
   };
 }
 
@@ -88,6 +91,7 @@ export default function TrainingHistoryScreen() {
               <Text style={styles.summaryValue}>{week.count} workouts</Text>
               <Text style={styles.summaryDetail}>
                 {week.minutes} min · {week.calories} kcal
+                {week.volume > 0 ? ` · ${week.volume.toLocaleString()} kg` : ''}
               </Text>
             </GlassCard>
             <GlassCard style={styles.summaryCard} padding={spacing.md}>
@@ -95,6 +99,7 @@ export default function TrainingHistoryScreen() {
               <Text style={styles.summaryValue}>{month.count} workouts</Text>
               <Text style={styles.summaryDetail}>
                 {month.minutes} min · {month.calories} kcal
+                {month.volume > 0 ? ` · ${month.volume.toLocaleString()} kg` : ''}
               </Text>
             </GlassCard>
           </View>
@@ -119,12 +124,23 @@ export default function TrainingHistoryScreen() {
                     <StatusBadge label={`${workout.durationMin} min`} tone="muted" />
                     <StatusBadge label={workout.intensity} tone={intensityTone(workout.intensity)} />
                     <StatusBadge label={`${workout.calories} kcal`} tone="muted" />
+                    {workout.totalVolume != null && workout.totalVolume > 0 ? (
+                      <StatusBadge label={`${workout.totalVolume.toLocaleString()} kg volume`} tone="cyan" />
+                    ) : (
+                      <StatusBadge label="Volume unavailable" tone="muted" />
+                    )}
                   </View>
                   <Text style={styles.workoutFocus}>{workout.focus}</Text>
+
+                  {workout.notes ? (
+                    <Text style={styles.workoutNotes}>Note: {workout.notes}</Text>
+                  ) : null}
+
                   <View style={styles.exerciseWrap}>
                     {workout.exercises.map((exercise, index) => (
                       <Text key={`${workout.id}-${index}`} style={styles.exerciseLine}>
-                        {exercise.name} {exercise.sets}×{exercise.reps}
+                        {exercise.name} · {exercise.sets}×{exercise.reps}
+                        {exercise.weight != null && exercise.weight > 0 ? ` @ ${exercise.weight} ${exercise.unit ?? 'kg'}` : ''}
                       </Text>
                     ))}
                   </View>
@@ -134,12 +150,14 @@ export default function TrainingHistoryScreen() {
           )}
         </View>
       )}
+
+      <GlobalFooter />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg },
+  content: { gap: spacing.lg, paddingBottom: spacing.xl },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerCopy: { flex: 1 },
   eyebrow: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.7 },
@@ -157,7 +175,8 @@ const styles = StyleSheet.create({
   workoutDate: { color: colors.muted, fontSize: typography.caption, marginTop: 2, letterSpacing: 0.5 },
   workoutMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   workoutFocus: { color: colors.cyan, fontSize: typography.caption, fontWeight: '700' },
-  exerciseWrap: { borderTopWidth: 1, borderTopColor: colors.line, paddingTop: spacing.sm, gap: 3 },
+  workoutNotes: { color: colors.silver, fontSize: typography.caption, fontStyle: 'italic', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: spacing.xs, borderRadius: 4 },
+  exerciseWrap: { borderTopWidth: 1, borderTopColor: colors.line, paddingTop: spacing.sm, gap: 4 },
   exerciseLine: { color: colors.silver, fontSize: typography.caption },
   emptyTitle: { color: colors.white, fontSize: typography.h2, fontWeight: '700', textAlign: 'center' },
   emptyText: { color: colors.silver, fontSize: typography.body, textAlign: 'center', lineHeight: 20 },

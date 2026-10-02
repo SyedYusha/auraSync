@@ -1,5 +1,5 @@
 import { profileService } from '@/services/profile/profileService';
-import type { AppRole, AuthResult, AuthUser, MemberProfile } from '@/types/member';
+import type { AppRole, AuthResult, AuthUser, FitnessGoal, FitnessLevel, MemberProfile } from '@/types/member';
 
 import { localAuthStore } from './localAuthStore';
 import { supabase } from './supabaseClient';
@@ -62,22 +62,51 @@ export const authService = {
     return { ok: true, user };
   },
 
-  async signUp(email: string, password: string, fullName: string): Promise<AuthResult> {
+  async signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    extra?: { phone?: string; fitnessGoal?: FitnessGoal; fitnessLevel?: FitnessLevel },
+  ): Promise<AuthResult> {
     const normalized = email.trim().toLowerCase();
     if (supabase) {
       const { data, error } = await supabase.auth.signUp({
         email: normalized,
         password,
-        options: { data: { full_name: fullName } },
+        options: { data: { full_name: fullName, phone: extra?.phone } },
       });
       if (error) return { ok: false, error: error.message };
       if (!data.session) return { ok: true, needsEmailConfirmation: true };
       const authUser = data.user ? { id: data.user.id, email: data.user.email ?? normalized } : undefined;
+      if (authUser && extra) {
+        await profileService.saveProfile(authUser.id, {
+          fullName,
+          phone: extra.phone,
+          age: 25,
+          gender: 'Other',
+          fitnessGoal: extra.fitnessGoal ?? 'General Fitness',
+          fitnessLevel: extra.fitnessLevel ?? 'Intermediate',
+          heightCm: 175,
+          weightKg: 70,
+        }).catch(() => {});
+      }
       return authUser ? { ok: true, user: authUser } : { ok: true, needsEmailConfirmation: true };
     }
     const user = await localAuthStore.signUp(normalized, password, fullName);
     if (!user) return { ok: false, error: 'An account with this email already exists.' };
     await localAuthStore.saveSession(user);
+    if (extra) {
+      await profileService.saveProfile(user.id, {
+        fullName,
+        phone: extra.phone,
+        age: 25,
+        gender: 'Other',
+        fitnessGoal: extra.fitnessGoal ?? 'General Fitness',
+        fitnessLevel: extra.fitnessLevel ?? 'Intermediate',
+        heightCm: 175,
+        weightKg: 70,
+      }).catch(() => {});
+    }
     return { ok: true, user };
   },
 

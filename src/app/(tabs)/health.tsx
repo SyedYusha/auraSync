@@ -6,6 +6,7 @@ import { HealthTrendChart } from '@/components/health/HealthTrendChart';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, LoadingState, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
+import { GlobalFooter } from '@/components/ui/GlobalFooter';
 import type { ManualHealthEntry } from '@/services/health/manualHealthDataService';
 import { useHealthData } from '@/state/HealthDataProvider';
 import { useRecovery } from '@/state/useRecovery';
@@ -77,6 +78,7 @@ function HealthContent({
         <Text style={styles.description}>Last {Math.min(activityHistory.length, 7)} entries · newest first</Text>
         {activityHistory.slice(0, 7).reverse().map((entry) => <View key={entry.capturedAt} style={styles.trendRow}><Text style={styles.trendDate}>{new Date(entry.capturedAt).toLocaleDateString()}</Text><Text style={styles.trendValue}>HRV {entry.hrv} ms</Text><Text style={styles.trendValue}>Sleep {entry.sleep.toFixed(1)}h</Text><Text style={styles.trendValue}>Stress {entry.stress}</Text></View>)}
       </GlassCard> : null}
+      <GlobalFooter />
     </Screen>
   );
 }

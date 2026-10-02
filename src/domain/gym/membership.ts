@@ -31,6 +31,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cash: 'Cash',
   card: 'Card',
   bank_transfer: 'Bank transfer',
+  demo: 'Demo payment',
 };
 
 function toTime(value: string): number | null {

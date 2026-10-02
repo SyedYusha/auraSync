@@ -6,6 +6,7 @@ import { RecoveryCard, RecoveryFactorList } from '@/components/health/RecoveryCa
 import { ErrorState, LoadingState, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Screen } from '@/components/ui/Screen';
+import { GlobalFooter } from '@/components/ui/GlobalFooter';
 import { WorkoutRecommendationCard } from '@/components/workout/WorkoutRecommendationCard';
 import { useAuth } from '@/state/AuthProvider';
 import { useHealthData } from '@/state/HealthDataProvider';
@@ -54,13 +55,19 @@ function HomeContent({ snapshot, onRefresh, isDemoMode }: { readonly snapshot: H
       )}
 
       <View style={styles.quickActions}>
-        <Text style={styles.sectionTitle}>TRAINING</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>GYM &amp; TRAINING</Text>
+          <Text style={styles.sectionNote}>Connected</Text>
+        </View>
         <View style={styles.actionRow}>
+          <PrimaryButton label="CHECK IN / GYM PASS" onPress={() => router.push('/membership')} />
           <PrimaryButton label="BUILD WORKOUT" onPress={() => router.push('/workout-builder')} />
           <PrimaryButton label="7-DAY PLAN" onPress={() => router.push('/workout-plan-builder')} />
           <PrimaryButton label="REPORTS" onPress={() => router.push('/reports')} />
         </View>
       </View>
+
+      <GlobalFooter />
     </Screen>
   );
 }

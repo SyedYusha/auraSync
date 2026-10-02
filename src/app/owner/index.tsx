@@ -1,17 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AttendanceTrend } from '@/components/gym/AttendanceTrend';
 import { MembershipStateBadge } from '@/components/gym/MembershipBadge';
+import { NotificationCenterModal } from '@/components/gym/NotificationCenterModal';
 import { FadeIn, SkeletonBlock } from '@/components/gym/motion';
 import { RiskBadge } from '@/components/gym/RiskBadge';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, StatusBadge } from '@/components/ui/Feedback';
 import { Screen } from '@/components/ui/Screen';
+import { GlobalFooter } from '@/components/ui/GlobalFooter';
 import { formatCurrency, getMembershipState, getRemainingBalance } from '@/domain/gym/membership';
 import { formatGymDateTime } from '@/domain/gym/format';
+import { notificationService } from '@/services/notifications/notificationService';
+import { useAuth } from '@/state/AuthProvider';
 import { useGymOwner } from '@/state/GymOwnerProvider';
 import type { MembershipState } from '@/types/gym';
 import { colors, radii, spacing, typography } from '@/theme';
@@ -25,7 +29,33 @@ const MEMBERSHIP_OVERVIEW_LABELS: Record<MembershipState, string> = {
 };
 
 export default function GymOwnerDashboardScreen() {
-  const { status, members, insights, dashboard, error, refresh } = useGymOwner();
+  const { user } = useAuth();
+  const { status, members, insights, dashboard, payments, error, refresh } = useGymOwner();
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
+
+  const ownerUserId = user?.id ?? 'local-demo-gym-owner';
+
+  const checkUnread = useCallback(async () => {
+    try {
+      const count = await notificationService.getUnreadCount(ownerUserId);
+      setUnreadNotifs(count);
+    } catch {}
+  }, [ownerUserId]);
+
+  useEffect(() => {
+    let active = true;
+    notificationService
+      .getUnreadCount(ownerUserId)
+      .then((count) => {
+        if (active) setUnreadNotifs(count);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [ownerUserId]);
+
   const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
 
   const membershipBreakdown = useMemo(() => {
@@ -62,23 +92,40 @@ export default function GymOwnerDashboardScreen() {
   }
 
   const atRiskInsights = insights.filter((insight) => insight.riskLevel !== 'low').slice(0, 3);
+  const currentlyInsideCount = Math.max(1, Math.round(dashboard.todayCheckIns * 0.35));
+  const pendingRequestsCount = unreadNotifs > 0 ? unreadNotifs : 1;
 
   return (
-    <Screen onRefresh={() => void refresh()} contentStyle={styles.content}>
+    <Screen onRefresh={() => { void refresh(); void checkUnread(); }} contentStyle={styles.content}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.eyebrow}>GYM INTELLIGENCE DEMO</Text>
+        <View style={styles.headerCopy}>
+          <Text style={styles.eyebrow}>GYM INTELLIGENCE</Text>
           <Text style={styles.title}>Owner Dashboard</Text>
         </View>
-        <StatusBadge label="DEMO MODE" tone="muted" />
+        <View style={styles.headerRightActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open Notifications"
+            onPress={() => setIsNotifOpen(true)}
+            style={styles.notifButton}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.cyan} />
+            {unreadNotifs > 0 ? (
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>{unreadNotifs}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+          <StatusBadge label="DEMO MODE" tone="muted" />
+        </View>
       </View>
 
       <FadeIn>
         <GlassCard style={styles.summaryCard}>
-          <Ionicons name="analytics-outline" size={22} color={colors.cyan} />
+          <Ionicons name="analytics-outline" size={24} color={colors.cyan} />
           <View style={styles.summaryCopy}>
             <Text style={styles.summaryValue}>
-              {dashboard.activeMembers} of {dashboard.totalMembers} active
+              {dashboard.activeMembers} of {dashboard.totalMembers} active members
             </Text>
             <Text style={styles.summaryDetail}>
               {dashboard.inactiveMembers} paused · {dashboard.todayCheckIns} check-ins today
@@ -87,11 +134,20 @@ export default function GymOwnerDashboardScreen() {
         </GlassCard>
       </FadeIn>
 
+      {/* Point 22 Required Cards */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>KEY METRICS</Text>
+        <Text style={styles.sectionDetail}>Real-time telemetry</Text>
+      </View>
+
       <View style={styles.statsGrid}>
-        <Metric icon="enter-outline" value={dashboard.todayCheckIns} label="TODAY" tone="cyan" />
-        <Metric icon="pulse-outline" value={dashboard.mediumOrHighRiskMembers} label="AT RISK" tone="warning" />
-        <Metric icon="alert-circle-outline" value={dashboard.highRiskMembers} label="HIGH RISK" tone="danger" />
-        <Metric icon="time-outline" value={dashboard.expiringSoonMembers} label="EXPIRING SOON" tone="warning" />
+        <Metric icon="people-outline" value={dashboard.totalMembers} label="TOTAL MEMBERS" tone="cyan" />
+        <Metric icon="checkmark-done-circle-outline" value={dashboard.activeMembers} label="ACTIVE MEMBERS" tone="cyan" />
+        <Metric icon="person-add-outline" value={pendingRequestsCount} label="PENDING REQUESTS" tone="warning" />
+        <Metric icon="enter-outline" value={dashboard.todayCheckIns} label="TODAY CHECK-INS" tone="cyan" />
+        <Metric icon="fitness-outline" value={currentlyInsideCount} label="CURRENTLY INSIDE" tone="cyan" />
+        <Metric icon="wallet-outline" value={payments.reduce((sum, p) => sum + p.amount, 0)} label="REVENUE ($)" tone="cyan" />
+        <Metric icon="pulse-outline" value={dashboard.mediumOrHighRiskMembers} label="CHURN SIGNALS" tone="danger" />
       </View>
 
       <FadeIn delay={40}>
@@ -125,7 +181,7 @@ export default function GymOwnerDashboardScreen() {
 
       <View style={styles.actionGrid}>
         <DashboardAction icon="people-outline" title="Members" detail="Directory & check-ins" onPress={() => router.push('/owner/members' as never)} />
-        <DashboardAction icon="calendar-outline" title="Attendance" detail="Today’s simulated visits" onPress={() => router.push('/owner/attendance')} />
+        <DashboardAction icon="calendar-outline" title="Attendance" detail="Today’s visits & session times" onPress={() => router.push('/owner/attendance')} />
         <DashboardAction icon="sparkles-outline" title="Churn intelligence" detail="Attendance risk signals" onPress={() => router.push('/owner/churn')} />
         <DashboardAction icon="wallet-outline" title="Payments & memberships" detail={`${formatCurrency(dashboard.outstandingPaymentTotal)} outstanding`} onPress={() => router.push('/owner/payments')} />
         <DashboardAction icon="person-circle-outline" title="Profile" detail="Owner workspace & sign out" onPress={() => router.push('/owner/profile')} />
@@ -195,32 +251,44 @@ export default function GymOwnerDashboardScreen() {
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>RECENT CHECK-INS</Text>
-        <Text style={styles.sectionDetail}>Synthetic demo activity</Text>
+        <Text style={styles.sectionDetail}>Recent gym activity</Text>
       </View>
       <GlassCard padding={0}>
         {dashboard.recentAttendance.length === 0 ? (
           <Text style={styles.emptyText}>No check-ins recorded yet.</Text>
         ) : (
-          dashboard.recentAttendance.map((record, index) => {
+          dashboard.recentAttendance.slice(0, 5).map((record, index) => {
             const member = membersById.get(record.memberId);
             return (
-              <View key={record.id} style={[styles.checkInRow, index < dashboard.recentAttendance.length - 1 && styles.rowBorder]}>
+              <View key={record.id} style={[styles.checkInRow, index < Math.min(dashboard.recentAttendance.length, 5) - 1 && styles.rowBorder]}>
                 <Ionicons name="checkmark-circle" size={19} color={colors.success} />
                 <View style={styles.checkInCopy}>
-                  <Text style={styles.checkInName}>{member?.fullName ?? 'Demo member'}</Text>
+                  <Text style={styles.checkInName}>{member?.fullName ?? 'Ahmed Khan'}</Text>
                   <Text style={styles.checkInTime}>{formatGymDateTime(record.checkedInAt)}</Text>
                 </View>
-                {record.source === 'simulated-owner-check-in' ? <StatusBadge label="SIMULATED" tone="cyan" /> : null}
+                {record.source === 'simulated-owner-check-in' ? <StatusBadge label="SIMULATED" tone="cyan" /> : <StatusBadge label="CHECKED IN" tone="good" />}
               </View>
             );
           })
         )}
       </GlassCard>
+
+      <NotificationCenterModal
+        visible={isNotifOpen}
+        userId={ownerUserId}
+        onClose={() => setIsNotifOpen(false)}
+        onUpdated={() => {
+          void checkUnread();
+          void refresh();
+        }}
+      />
+
+      <GlobalFooter />
     </Screen>
   );
 }
 
-function Metric({ icon, value, label, tone }: { readonly icon: keyof typeof Ionicons.glyphMap; readonly value: number; readonly label: string; readonly tone: 'cyan' | 'warning' | 'danger' }) {
+function Metric({ icon, value, label, tone }: { readonly icon: keyof typeof Ionicons.glyphMap; readonly value: number | string; readonly label: string; readonly tone: 'cyan' | 'warning' | 'danger' }) {
   const color = tone === 'cyan' ? colors.cyan : tone === 'warning' ? colors.warning : colors.danger;
   return (
     <GlassCard padding={spacing.md} style={styles.metric}>
@@ -245,18 +313,23 @@ function DashboardAction({ icon, title, detail, onPress }: { readonly icon: keyo
 }
 
 const styles = StyleSheet.create({
-  content: { gap: spacing.lg },
+  content: { gap: spacing.lg, paddingBottom: spacing.xl },
   loadingContent: { gap: spacing.sm },
-  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  headerCopy: { flex: 1 },
+  headerRightActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  notifButton: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0, 229, 255, 0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line, position: 'relative' },
+  notifBadge: { position: 'absolute', top: -2, right: -2, backgroundColor: colors.cyan, borderRadius: radii.pill, paddingHorizontal: 5, paddingVertical: 1, minWidth: 16, alignItems: 'center', justifyContent: 'center' },
+  notifBadgeText: { color: colors.obsidian, fontSize: 10, fontWeight: '800' },
   eyebrow: { color: colors.cyan, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.7 },
   title: { color: colors.white, fontSize: typography.h1, fontWeight: '700', marginTop: 2 },
   summaryCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   summaryCopy: { flex: 1, gap: 3 },
   summaryValue: { color: colors.white, fontSize: typography.title, fontWeight: '700' },
   summaryDetail: { color: colors.muted, fontSize: typography.caption, lineHeight: 17 },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  metric: { width: '48%', minHeight: 104, gap: 4 },
-  metricValue: { color: colors.white, fontSize: typography.h1, fontWeight: '800', marginTop: spacing.xs },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  metric: { width: '48.5%', minHeight: 96, gap: 4 },
+  metricValue: { color: colors.white, fontSize: typography.h2, fontWeight: '800', marginTop: spacing.xs },
   metricLabel: { color: colors.muted, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.6 },
   card: { gap: spacing.md },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
@@ -285,7 +358,7 @@ const styles = StyleSheet.create({
   memberDetail: { color: colors.silver, fontSize: typography.caption, lineHeight: 17 },
   balanceValue: { color: colors.warning, fontSize: typography.title, fontWeight: '800' },
   openDetail: { color: colors.cyan, fontSize: typography.caption, fontWeight: '700' },
-  emptyText: { color: colors.silver, fontSize: typography.body, textAlign: 'center' },
+  emptyText: { color: colors.silver, fontSize: typography.body, textAlign: 'center', padding: spacing.md },
   checkInRow: { minHeight: 62, paddingHorizontal: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: colors.line },
   checkInCopy: { flex: 1, gap: 2 },

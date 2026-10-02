@@ -8,6 +8,7 @@ import { GlassCard } from '@/components/ui/GlassCard';
 import { LoadingState, OutlineButton, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { router } from 'expo-router';
 import { Screen } from '@/components/ui/Screen';
+import { GlobalFooter } from '@/components/ui/GlobalFooter';
 import {
   getWearableState,
   pairWearable,
@@ -174,6 +175,22 @@ export default function ProfileScreen() {
             </View>
           </GlassCard>
 
+          <Text style={styles.sectionTitle}>CONNECT YOUR GYM</Text>
+          <GlassCard style={{ gap: spacing.sm }}>
+            <View style={styles.sourceRow}>
+              <View style={styles.sourceIcon}>
+                <Ionicons name="barbell-outline" size={20} color={colors.cyan} />
+              </View>
+              <View style={styles.sourceCopy}>
+                <Text style={styles.sourceName}>Gym Intelligence</Text>
+                <Text style={styles.sourceDetail}>
+                  Join your gym to unlock attendance, membership, payments and gym intelligence.
+                </Text>
+              </View>
+            </View>
+            <PrimaryButton label="Manage Gym Membership" onPress={() => router.push('/membership')} />
+          </GlassCard>
+
           <Text style={styles.sectionTitle}>HEALTH DATA SOURCE</Text>
           <GlassCard>
             <View style={styles.sourceRow}>
@@ -201,6 +218,7 @@ export default function ProfileScreen() {
           <Text style={styles.disclaimer}>
             AuraSync+ is a fitness and wellness prototype. It does not provide medical diagnosis, treatment, or advice.
           </Text>
+          <GlobalFooter />
         </View>
       )}
     </Screen>

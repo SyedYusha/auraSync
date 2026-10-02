@@ -4,7 +4,52 @@ export type AttendanceTrend = 'improving' | 'steady' | 'declining';
 export type MembershipPlan = 'Basic Monthly' | 'Premium Monthly' | 'Annual';
 export type MembershipState = 'active' | 'expiring_soon' | 'expired' | 'suspended';
 export type PaymentState = 'paid' | 'partial' | 'pending' | 'overdue';
-export type PaymentMethod = 'cash' | 'card' | 'bank_transfer';
+export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'demo';
+
+export type NotificationType =
+  | 'membership_request'
+  | 'membership_approved'
+  | 'payment_completed'
+  | 'member_checked_in'
+  | 'member_checked_out'
+  | 'churn_signal'
+  | 'membership_expiring';
+
+export interface GymNotification {
+  readonly id: string;
+  readonly recipientUserId: string;
+  readonly gymId?: string | null;
+  readonly type: NotificationType;
+  readonly title: string;
+  readonly message: string;
+  readonly relatedMemberId?: string | null;
+  readonly isRead: boolean;
+  readonly createdAt: string;
+}
+
+export interface GymInfo {
+  readonly id: string;
+  readonly name: string;
+  readonly address: string;
+  readonly code: string;
+  readonly monthlyFee: number;
+}
+
+export type MembershipStatus =
+  | 'none'
+  | 'pending'
+  | 'approved'
+  | 'payment_pending'
+  | 'active'
+  | 'expired'
+  | 'rejected'
+  | 'cancelled';
+
+export type PaymentProcessState =
+  | 'payment_pending'
+  | 'payment_processing'
+  | 'payment_paid'
+  | 'payment_failed';
 
 export interface GymMember {
   readonly id: string;
@@ -12,6 +57,7 @@ export interface GymMember {
   readonly email: string;
   readonly phone: string;
   readonly fitnessGoal: string;
+  readonly fitnessLevel?: string;
   readonly plan: MembershipPlan;
   readonly joinedAt: string;
   readonly membershipExpiresAt: string;
@@ -19,13 +65,21 @@ export interface GymMember {
   readonly amountPaid: number;
   readonly notes?: string;
   readonly isActive: boolean;
+  readonly membershipStatus?: MembershipStatus;
+  readonly paymentStatus?: PaymentProcessState | PaymentState;
+  readonly lastCheckInAt?: string | null;
+  readonly attendanceCount?: number;
 }
 
 export interface GymAttendanceRecord {
   readonly id: string;
   readonly memberId: string;
+  readonly gymId?: string;
   readonly checkedInAt: string;
-  readonly source: 'seeded-demo' | 'simulated-owner-check-in';
+  readonly checkOutAt?: string | null;
+  readonly durationMinutes?: number | null;
+  readonly status?: 'checked_in' | 'checked_out';
+  readonly source: 'seeded-demo' | 'simulated-owner-check-in' | 'member_check_in';
 }
 
 export interface GymPaymentRecord {
@@ -88,6 +142,10 @@ export interface GymDashboardSummary {
   readonly activeMembers: number;
   readonly inactiveMembers: number;
   readonly todayCheckIns: number;
+  readonly currentlyInGym: number;
+  readonly todayCheckOuts: number;
+  readonly averageSessionMinutes: number;
+  readonly pendingRequestsCount: number;
   readonly mediumOrHighRiskMembers: number;
   readonly highRiskMembers: number;
   readonly expiringSoonMembers: number;

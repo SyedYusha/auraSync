@@ -133,7 +133,7 @@ export const gymService = {
   async requestMembership(params: {
     userId: string;
     userName: string;
-    userEmail: string;
+    userEmail?: string;
     gymId: string;
     plan?: MembershipPlan;
   }): Promise<MemberMembershipData> {

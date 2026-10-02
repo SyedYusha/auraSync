@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -46,6 +46,7 @@ const STATUS_TONES: Record<MembershipStatus, 'cyan' | 'good' | 'muted'> = {
 
 export default function MemberMembershipScreen() {
   const { user, profile } = useAuth();
+  const effectiveUserId = user?.id ?? 'demo_user';
   const [loading, setLoading] = useState(true);
   const [membership, setMembership] = useState<MemberMembershipData | null>(null);
   const [attendance, setAttendance] = useState<readonly GymAttendanceRecord[]>([]);
@@ -53,7 +54,7 @@ export default function MemberMembershipScreen() {
 
   // Connect Gym Modal state
   const [isConnectModalVisible, setIsConnectModalVisible] = useState(false);
-  const [selectedGym] = useState<GymInfo>(DEFAULT_GYMS[0]!);
+  const [selectedGym, setSelectedGym] = useState<GymInfo>(DEFAULT_GYMS[0]!);
   const [gymCodeInput, setGymCodeInput] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
@@ -67,12 +68,11 @@ export default function MemberMembershipScreen() {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const loadData = useCallback(async () => {
-    if (!user) return;
     try {
       const [mem, att, active] = await Promise.all([
-        gymService.getMemberMembership(user.id),
-        gymService.getMemberAttendance(user.id),
-        gymService.getActiveCheckIn(user.id),
+        gymService.getMemberMembership(effectiveUserId),
+        gymService.getMemberAttendance(effectiveUserId),
+        gymService.getActiveCheckIn(effectiveUserId),
       ]);
       setMembership(mem);
       setAttendance(att);
@@ -82,15 +82,14 @@ export default function MemberMembershipScreen() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [effectiveUserId]);
 
   useEffect(() => {
-    if (!user) return;
     let active = true;
     Promise.all([
-      gymService.getMemberMembership(user.id),
-      gymService.getMemberAttendance(user.id),
-      gymService.getActiveCheckIn(user.id),
+      gymService.getMemberMembership(effectiveUserId),
+      gymService.getMemberAttendance(effectiveUserId),
+      gymService.getActiveCheckIn(effectiveUserId),
     ])
       .then(([mem, att, activeCheck]) => {
         if (!active) return;
@@ -105,10 +104,9 @@ export default function MemberMembershipScreen() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [effectiveUserId]);
 
   const handleSendMembershipRequest = async () => {
-    if (!user) return;
     setIsSubmittingRequest(true);
     try {
       const gymToJoin = gymCodeInput.trim()
@@ -116,9 +114,9 @@ export default function MemberMembershipScreen() {
         : selectedGym;
 
       const newMembership = await gymService.requestMembership({
-        userId: user.id,
+        userId: effectiveUserId,
         userName: profile?.fullName ?? 'Member',
-        userEmail: user.email,
+        userEmail: user?.email ?? 'member@aurasync.fit',
         gymId: gymToJoin.id,
       });
 
@@ -141,13 +139,13 @@ export default function MemberMembershipScreen() {
   };
 
   const handleExecuteDemoPayment = async () => {
-    if (!user || !membership) return;
+    if (!membership) return;
     setPaymentState('payment_processing');
 
     setTimeout(async () => {
       try {
         const updated = await gymService.processDemoPayment({
-          userId: user.id,
+          userId: effectiveUserId,
           userName: profile?.fullName ?? 'Member',
           amount: membership.totalFee,
           method: 'demo',
@@ -161,15 +159,14 @@ export default function MemberMembershipScreen() {
   };
 
   const handleConfirmCheckIn = async () => {
-    if (!user) return;
     setIsCheckingIn(true);
     try {
-      const gymName = membership?.gym.name ?? 'Aura Fitness Club';
+      const currentGymName = membership?.gym?.name ?? 'Aura Fitness Club';
       const record = await gymService.checkInMember({
-        userId: user.id,
+        userId: effectiveUserId,
         userName: profile?.fullName ?? 'Member',
-        gymId: membership?.gym.id,
-        gymName,
+        gymId: membership?.gym?.id,
+        gymName: currentGymName,
       });
       setActiveCheckIn(record);
       setIsCheckInConfirmVisible(false);
@@ -180,14 +177,14 @@ export default function MemberMembershipScreen() {
   };
 
   const handleCheckOut = async () => {
-    if (!user || !activeCheckIn) return;
+    if (!activeCheckIn) return;
     setIsCheckingOut(true);
     try {
       await gymService.checkOutMember({
-        userId: user.id,
+        userId: effectiveUserId,
         userName: profile?.fullName ?? 'Member',
         recordId: activeCheckIn.id,
-        gymName: membership?.gym.name,
+        gymName: membership?.gym?.name,
       });
       setActiveCheckIn(null);
       await loadData();
@@ -206,7 +203,7 @@ export default function MemberMembershipScreen() {
   }
 
   const currentStatus: MembershipStatus = membership?.status ?? 'none';
-  const gymName = membership?.gym.name ?? 'Aura Fitness Club';
+  const gymName = membership?.gym?.name ?? 'Aura Fitness Club';
   const visitCount = attendance.length;
 
   return (

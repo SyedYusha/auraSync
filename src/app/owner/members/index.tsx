@@ -261,7 +261,7 @@ export default function GymMembersScreen() {
 
                 <View style={[styles.tdCell, { width: 100 }]}>
                   <Text style={styles.tableValueText}>
-                    {checkedInToday ? 'Today' : insight?.recentVisitsCount ? `${insight.recentVisitsCount} visits` : '—'}
+                    {checkedInToday ? 'Today' : insight?.checkInsLast30 ? `${insight.checkInsLast30} visits` : '—'}
                   </Text>
                 </View>
 

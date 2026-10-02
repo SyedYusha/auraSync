@@ -18,6 +18,7 @@ interface NotificationRow {
   message: string;
   related_member_id: string | null;
   is_read: boolean;
+  action_status?: string | null;
   created_at: string;
 }
 
@@ -41,6 +42,7 @@ export const notificationService = {
             message: row.message,
             relatedMemberId: row.related_member_id,
             isRead: row.is_read,
+            actionStatus: (row.action_status as 'pending' | 'approved' | 'rejected') ?? undefined,
             createdAt: row.created_at,
           }));
         }
@@ -141,6 +143,38 @@ export const notificationService = {
     }
   },
 
+  async updateNotificationAction(
+    notificationId: string,
+    action: 'approved' | 'rejected',
+    userId: string,
+  ): Promise<void> {
+    const current = await this.getNotifications(userId);
+    const updated = current.map((n) => {
+      if (n.id === notificationId) {
+        const cleanMessage = n.message.replace(/ \((Approved|Rejected|Declined)[^)]*\)/g, '');
+        return {
+          ...n,
+          isRead: true,
+          actionStatus: action,
+          message:
+            action === 'approved'
+              ? `${cleanMessage} (Approved - Member access granted)`
+              : `${cleanMessage} (Declined)`,
+        };
+      }
+      return n;
+    });
+    await AsyncStorage.setItem(storageKey(userId), JSON.stringify(updated));
+
+    if (supabase) {
+      try {
+        await supabase.from('notifications').update({ is_read: true }).eq('id', notificationId);
+      } catch (err) {
+        console.warn('Supabase updateNotificationAction failed:', err);
+      }
+    }
+  },
+
   async seedDefaultNotificationsIfEmpty(userId: string, role: 'member' | 'gym_owner'): Promise<void> {
     const existing = await this.getNotifications(userId);
     if (existing.length > 0) return;
@@ -158,6 +192,7 @@ export const notificationService = {
           message: 'Ahmed Khan requested to join Aura Fitness Club.',
           relatedMemberId: 'member-ahmed-khan',
           isRead: false,
+          actionStatus: 'pending',
           createdAt: ago(15),
         },
         {

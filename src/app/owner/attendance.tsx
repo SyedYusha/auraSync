@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ui/GlassCard';
 import { ErrorState, LoadingState, StatusBadge } from '@/components/ui/Feedback';
@@ -143,38 +143,42 @@ export default function AttendanceScreen() {
       </View>
 
       <GlassCard padding={0} style={styles.tableCard}>
-        <View style={styles.tableHeaderRow}>
-          <Text style={[styles.thCell, { flex: 2 }]}>MEMBER</Text>
-          <Text style={[styles.thCell, { flex: 2 }]}>CHECK IN</Text>
-          <Text style={[styles.thCell, { flex: 1 }]}>DURATION</Text>
-          <Text style={[styles.thCell, { width: 90, textAlign: 'right' }]}>STATUS</Text>
-        </View>
-
-        {filteredAttendance.length === 0 ? (
-          <View style={styles.emptyWrap}>
-            <Text style={styles.emptyText}>No attendance records found.</Text>
-          </View>
-        ) : (
-          filteredAttendance.map((rec, index) => (
-            <View key={rec.id} style={[styles.tableRow, index < filteredAttendance.length - 1 && styles.rowBorder]}>
-              <View style={[styles.tdCell, { flex: 2 }]}>
-                <Text style={styles.memberName}>{rec.memberName}</Text>
-              </View>
-              <View style={[styles.tdCell, { flex: 2 }]}>
-                <Text style={styles.tableTime}>{rec.checkInFormatted}</Text>
-              </View>
-              <View style={[styles.tdCell, { flex: 1 }]}>
-                <Text style={styles.tableDuration}>{rec.duration}</Text>
-              </View>
-              <View style={[styles.tdCell, { width: 90, alignItems: 'flex-end' }]}>
-                <StatusBadge
-                  label={rec.attendanceStatus === 'checked_in' ? 'INSIDE' : 'OUT'}
-                  tone={rec.attendanceStatus === 'checked_in' ? 'cyan' : 'muted'}
-                />
-              </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScrollContent}>
+          <View style={styles.tableInner}>
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.thCell, { flex: 2, minWidth: 110 }]}>MEMBER</Text>
+              <Text style={[styles.thCell, { flex: 2, minWidth: 120 }]}>CHECK IN</Text>
+              <Text style={[styles.thCell, { flex: 1, minWidth: 80 }]}>DURATION</Text>
+              <Text style={[styles.thCell, { width: 90, textAlign: 'right' }]}>STATUS</Text>
             </View>
-          ))
-        )}
+
+            {filteredAttendance.length === 0 ? (
+              <View style={styles.emptyWrap}>
+                <Text style={styles.emptyText}>No attendance records found.</Text>
+              </View>
+            ) : (
+              filteredAttendance.map((rec, index) => (
+                <View key={rec.id} style={[styles.tableRow, index < filteredAttendance.length - 1 && styles.rowBorder]}>
+                  <View style={[styles.tdCell, { flex: 2, minWidth: 110 }]}>
+                    <Text style={styles.memberName}>{rec.memberName}</Text>
+                  </View>
+                  <View style={[styles.tdCell, { flex: 2, minWidth: 120 }]}>
+                    <Text style={styles.tableTime}>{rec.checkInFormatted}</Text>
+                  </View>
+                  <View style={[styles.tdCell, { flex: 1, minWidth: 80 }]}>
+                    <Text style={styles.tableDuration}>{rec.duration}</Text>
+                  </View>
+                  <View style={[styles.tdCell, { width: 90, alignItems: 'flex-end' }]}>
+                    <StatusBadge
+                      label={rec.attendanceStatus === 'checked_in' ? 'INSIDE' : 'OUT'}
+                      tone={rec.attendanceStatus === 'checked_in' ? 'cyan' : 'muted'}
+                    />
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </ScrollView>
       </GlassCard>
 
       <GlobalFooter />
@@ -203,7 +207,7 @@ const styles = StyleSheet.create({
   exportBtnText: { color: colors.cyan, fontSize: 11, fontWeight: '800' },
 
   kpiGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  kpiCard: { width: '48.5%', minHeight: 92, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: radii.md, padding: spacing.sm, justifyContent: 'center', gap: 2, borderWidth: 1, borderColor: colors.line },
+  kpiCard: { flexBasis: '47%', flexGrow: 1, minWidth: 135, minHeight: 92, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: radii.md, padding: spacing.sm, justifyContent: 'center', gap: 2, borderWidth: 1, borderColor: colors.line },
   kpiValue: { color: colors.white, fontSize: typography.h2, fontWeight: '800', marginTop: 2 },
   kpiLabel: { color: colors.muted, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.5 },
 
@@ -215,6 +219,8 @@ const styles = StyleSheet.create({
   sectionDetail: { color: colors.muted, fontSize: typography.caption },
 
   tableCard: { overflow: 'hidden' },
+  tableScrollContent: { minWidth: '100%' },
+  tableInner: { minWidth: 420 },
   tableHeaderRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: 'rgba(255, 255, 255, 0.03)' },
   thCell: { color: colors.muted, fontSize: typography.label, fontWeight: '700' },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },

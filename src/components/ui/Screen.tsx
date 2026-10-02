@@ -39,8 +39,8 @@ export function Screen({ children, scroll = true, refreshing = false, onRefresh,
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.obsidian },
-  safeArea: { flex: 1 },
+  root: { flex: 1, backgroundColor: colors.obsidian, overflow: 'hidden' },
+  safeArea: { flex: 1, overflow: 'hidden' },
   scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: 132, gap: spacing.lg },
   fixedContent: { flex: 1, paddingTop: spacing.md },
   wideContent: { width: '100%', maxWidth: 960, alignSelf: 'center' },

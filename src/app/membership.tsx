@@ -138,6 +138,38 @@ export default function MemberMembershipScreen() {
     setIsPaymentModalVisible(true);
   };
 
+  const handleSimulateApprove = async () => {
+    try {
+      await gymService.approveMembership({
+        memberId: effectiveUserId,
+        gymId: membership?.gym.id ?? DEFAULT_GYMS[0]!.id,
+        ownerUserId: 'local-demo-gym-owner',
+        memberName: profile?.fullName ?? 'Demo Member',
+      });
+      await loadData();
+      Alert.alert(
+        'Status Updated: Approved',
+        'The gym owner has approved your membership request. You can now proceed to payment and check-in.',
+      );
+    } catch {
+      Alert.alert('Error', 'Failed to approve membership.');
+    }
+  };
+
+  const handleSimulateReject = async () => {
+    try {
+      await gymService.rejectMembership({
+        memberId: effectiveUserId,
+        gymId: membership?.gym.id ?? DEFAULT_GYMS[0]!.id,
+        ownerUserId: 'local-demo-gym-owner',
+      });
+      await loadData();
+      Alert.alert('Status Updated: Declined', 'The membership request has been declined.');
+    } catch {
+      Alert.alert('Error', 'Failed to reject membership.');
+    }
+  };
+
   const handleExecuteDemoPayment = async () => {
     if (!membership) return;
     setPaymentState('payment_processing');
@@ -302,6 +334,36 @@ export default function MemberMembershipScreen() {
               Your membership request has been sent to {gymName}. You&apos;ll be
               notified when the gym owner approves your request.
             </Text>
+
+            <View style={styles.pendingActionsRow}>
+              <OutlineButton
+                label="Refresh Status"
+                onPress={() => void loadData()}
+              />
+            </View>
+
+            <View style={styles.demoSimulateBox}>
+              <Text style={styles.demoSimulateTitle}>TESTING / OWNER ACTIONS</Text>
+              <Text style={styles.demoSimulateText}>
+                Simulate gym owner response to test member entry/rejection flows:
+              </Text>
+              <View style={styles.demoSimulateButtons}>
+                <Pressable
+                  style={styles.simApproveBtn}
+                  onPress={() => void handleSimulateApprove()}
+                >
+                  <Ionicons name="checkmark-circle" size={16} color="#000" />
+                  <Text style={styles.simApproveText}>Approve & Admit</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.simRejectBtn}
+                  onPress={() => void handleSimulateReject()}
+                >
+                  <Ionicons name="close-circle" size={16} color={colors.danger} />
+                  <Text style={styles.simRejectText}>Reject Request</Text>
+                </Pressable>
+              </View>
+            </View>
           </View>
         ) : currentStatus === 'approved' || currentStatus === 'payment_pending' ? (
           <View style={styles.actionContainer}>
@@ -321,12 +383,18 @@ export default function MemberMembershipScreen() {
         ) : currentStatus === 'rejected' ? (
           <View style={styles.actionContainer}>
             <Text style={[styles.noticeText, { color: colors.danger }]}>
-              Your membership request was rejected by the gym. You can connect to another gym.
+              Your membership request was rejected by the gym. You can re-apply or connect to another gym.
             </Text>
-            <OutlineButton
-              label="Connect to Another Gym"
-              onPress={() => setIsConnectModalVisible(true)}
-            />
+            <View style={{ gap: spacing.xs }}>
+              <PrimaryButton
+                label="Re-apply to Join"
+                onPress={() => void handleSendMembershipRequest()}
+              />
+              <OutlineButton
+                label="Connect to Another Gym"
+                onPress={() => setIsConnectModalVisible(true)}
+              />
+            </View>
           </View>
         ) : null}
       </GlassCard>
@@ -377,35 +445,37 @@ export default function MemberMembershipScreen() {
             No attendance records yet. Check in when entering the gym to record your visits.
           </Text>
         ) : (
-          <View style={styles.table}>
-            <View style={styles.tableHeaderRow}>
-              <Text style={[styles.th, { flex: 1.8 }]}>DATE</Text>
-              <Text style={[styles.th, { flex: 1.4 }]}>STATUS</Text>
-              <Text style={[styles.th, { flex: 1.2, textAlign: 'right' }]}>DURATION</Text>
-            </View>
-
-            {attendance.map((record) => (
-              <View key={record.id} style={styles.tableRow}>
-                <View style={{ flex: 1.8 }}>
-                  <Text style={styles.tdDate}>{record.checkedInAt}</Text>
-                  {record.checkOutAt ? (
-                    <Text style={styles.tdSub}>Out: {record.checkOutAt}</Text>
-                  ) : null}
-                </View>
-
-                <View style={{ flex: 1.4 }}>
-                  <StatusBadge
-                    label={record.status === 'checked_in' ? 'IN GYM' : 'COMPLETED'}
-                    tone={record.status === 'checked_in' ? 'cyan' : 'good'}
-                  />
-                </View>
-
-                <Text style={[styles.tdDuration, { flex: 1.2, textAlign: 'right' }]}>
-                  {record.durationMinutes ? `${record.durationMinutes} min` : 'Active'}
-                </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScrollContent}>
+            <View style={[styles.table, styles.tableInner]}>
+              <View style={styles.tableHeaderRow}>
+                <Text style={[styles.th, { flex: 1.8, minWidth: 100 }]}>DATE</Text>
+                <Text style={[styles.th, { flex: 1.4, minWidth: 90 }]}>STATUS</Text>
+                <Text style={[styles.th, { flex: 1.2, minWidth: 80, textAlign: 'right' }]}>DURATION</Text>
               </View>
-            ))}
-          </View>
+
+              {attendance.map((record) => (
+                <View key={record.id} style={styles.tableRow}>
+                  <View style={{ flex: 1.8, minWidth: 100 }}>
+                    <Text style={styles.tdDate}>{record.checkedInAt}</Text>
+                    {record.checkOutAt ? (
+                      <Text style={styles.tdSub}>Out: {record.checkOutAt}</Text>
+                    ) : null}
+                  </View>
+
+                  <View style={{ flex: 1.4, minWidth: 90 }}>
+                    <StatusBadge
+                      label={record.status === 'checked_in' ? 'IN GYM' : 'COMPLETED'}
+                      tone={record.status === 'checked_in' ? 'cyan' : 'good'}
+                    />
+                  </View>
+
+                  <Text style={[styles.tdDuration, { flex: 1.2, minWidth: 80, textAlign: 'right' }]}>
+                    {record.durationMinutes ? `${record.durationMinutes} min` : 'Active'}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </ScrollView>
         )}
       </GlassCard>
 
@@ -640,7 +710,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   detailItem: {
-    width: '46%',
+    flexBasis: '47%',
+    flexGrow: 1,
+    minWidth: 125,
     gap: 3,
   },
   detailLabel: {
@@ -672,6 +744,71 @@ const styles = StyleSheet.create({
     color: colors.warning,
     fontSize: typography.title,
     fontWeight: '700',
+  },
+  pendingActionsRow: {
+    marginTop: spacing.xs,
+  },
+  demoSimulateBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 229, 255, 0.25)',
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  demoSimulateTitle: {
+    color: colors.cyan,
+    fontSize: typography.label,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  demoSimulateText: {
+    color: colors.muted,
+    fontSize: typography.caption,
+    lineHeight: 16,
+  },
+  demoSimulateButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  simApproveBtn: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.cyan,
+    borderRadius: radii.sm,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
+  },
+  simApproveText: {
+    color: '#000',
+    fontSize: typography.caption,
+    fontWeight: '800',
+  },
+  simRejectBtn: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 82, 82, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 82, 82, 0.35)',
+    borderRadius: radii.sm,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
+  },
+  simRejectText: {
+    color: colors.danger,
+    fontSize: typography.caption,
+    fontWeight: '800',
   },
   approvedBadgeWrap: {
     flexDirection: 'row',
@@ -733,6 +870,13 @@ const styles = StyleSheet.create({
   },
   table: {
     gap: spacing.xs,
+  },
+  tableScrollContent: {
+    minWidth: '100%',
+  },
+  tableInner: {
+    minWidth: 320,
+    width: '100%',
   },
   tableHeaderRow: {
     flexDirection: 'row',

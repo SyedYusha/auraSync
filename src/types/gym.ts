@@ -9,6 +9,7 @@ export type PaymentMethod = 'cash' | 'card' | 'bank_transfer' | 'demo';
 export type NotificationType =
   | 'membership_request'
   | 'membership_approved'
+  | 'membership_rejected'
   | 'payment_completed'
   | 'member_checked_in'
   | 'member_checked_out'
@@ -25,6 +26,7 @@ export interface GymNotification {
   readonly relatedMemberId?: string | null;
   readonly isRead: boolean;
   readonly createdAt: string;
+  readonly actionStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface GymInfo {

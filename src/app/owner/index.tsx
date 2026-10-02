@@ -141,13 +141,13 @@ export default function GymOwnerDashboardScreen() {
       </View>
 
       <View style={styles.statsGrid}>
-        <Metric icon="people-outline" value={dashboard.totalMembers} label="TOTAL MEMBERS" tone="cyan" />
-        <Metric icon="checkmark-done-circle-outline" value={dashboard.activeMembers} label="ACTIVE MEMBERS" tone="cyan" />
-        <Metric icon="person-add-outline" value={pendingRequestsCount} label="PENDING REQUESTS" tone="warning" />
-        <Metric icon="enter-outline" value={dashboard.todayCheckIns} label="TODAY CHECK-INS" tone="cyan" />
-        <Metric icon="fitness-outline" value={currentlyInsideCount} label="CURRENTLY INSIDE" tone="cyan" />
-        <Metric icon="wallet-outline" value={payments.reduce((sum, p) => sum + p.amount, 0)} label="REVENUE ($)" tone="cyan" />
-        <Metric icon="pulse-outline" value={dashboard.mediumOrHighRiskMembers} label="CHURN SIGNALS" tone="danger" />
+        <Metric icon="people-outline" value={dashboard.totalMembers} label="TOTAL MEMBERS" tone="cyan" onPress={() => router.push('/owner/members' as never)} />
+        <Metric icon="checkmark-done-circle-outline" value={dashboard.activeMembers} label="ACTIVE MEMBERS" tone="cyan" onPress={() => router.push('/owner/members' as never)} />
+        <Metric icon="person-add-outline" value={pendingRequestsCount} label="PENDING REQUESTS" tone="warning" onPress={() => setIsNotifOpen(true)} />
+        <Metric icon="enter-outline" value={dashboard.todayCheckIns} label="TODAY CHECK-INS" tone="cyan" onPress={() => router.push('/owner/attendance')} />
+        <Metric icon="fitness-outline" value={currentlyInsideCount} label="CURRENTLY INSIDE" tone="cyan" onPress={() => router.push('/owner/attendance')} />
+        <Metric icon="wallet-outline" value={payments.reduce((sum, p) => sum + p.amount, 0)} label="REVENUE ($)" tone="cyan" onPress={() => router.push('/owner/payments')} />
+        <Metric icon="pulse-outline" value={dashboard.mediumOrHighRiskMembers} label="CHURN SIGNALS" tone="danger" onPress={() => router.push('/owner/churn')} />
       </View>
 
       <FadeIn delay={40}>
@@ -288,15 +288,39 @@ export default function GymOwnerDashboardScreen() {
   );
 }
 
-function Metric({ icon, value, label, tone }: { readonly icon: keyof typeof Ionicons.glyphMap; readonly value: number | string; readonly label: string; readonly tone: 'cyan' | 'warning' | 'danger' }) {
+function Metric({
+  icon,
+  value,
+  label,
+  tone,
+  onPress,
+}: {
+  readonly icon: keyof typeof Ionicons.glyphMap;
+  readonly value: number | string;
+  readonly label: string;
+  readonly tone: 'cyan' | 'warning' | 'danger';
+  readonly onPress?: () => void;
+}) {
   const color = tone === 'cyan' ? colors.cyan : tone === 'warning' ? colors.warning : colors.danger;
-  return (
+  const content = (
     <GlassCard padding={spacing.md} style={styles.metric}>
-      <Ionicons name={icon} size={19} color={color} />
+      <View style={styles.metricTop}>
+        <Ionicons name={icon} size={19} color={color} />
+        {onPress ? <Ionicons name="arrow-forward-outline" size={13} color={colors.muted} /> : null}
+      </View>
       <Text style={[styles.metricValue, tone !== 'cyan' && { color }]}>{value}</Text>
       <Text style={styles.metricLabel}>{label}</Text>
     </GlassCard>
   );
+
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} style={styles.metricWrapper} accessibilityRole="button" accessibilityLabel={label}>
+        {content}
+      </Pressable>
+    );
+  }
+  return <View style={styles.metricWrapper}>{content}</View>;
 }
 
 function DashboardAction({ icon, title, detail, onPress }: { readonly icon: keyof typeof Ionicons.glyphMap; readonly title: string; readonly detail: string; readonly onPress: () => void }) {
@@ -328,7 +352,9 @@ const styles = StyleSheet.create({
   summaryValue: { color: colors.white, fontSize: typography.title, fontWeight: '700' },
   summaryDetail: { color: colors.muted, fontSize: typography.caption, lineHeight: 17 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  metric: { width: '48.5%', minHeight: 96, gap: 4 },
+  metricWrapper: { flexBasis: '47%', flexGrow: 1, minWidth: 135 },
+  metric: { width: '100%', minHeight: 96, gap: 4 },
+  metricTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   metricValue: { color: colors.white, fontSize: typography.h2, fontWeight: '800', marginTop: spacing.xs },
   metricLabel: { color: colors.muted, fontSize: typography.label, fontWeight: '800', letterSpacing: 0.6 },
   card: { gap: spacing.md },

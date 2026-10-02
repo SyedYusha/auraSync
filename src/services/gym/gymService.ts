@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { supabase } from '@/services/auth/supabaseClient';
+import { gymDemoService } from '@/services/gym/gymDemoService';
 import { notificationService } from '@/services/notifications/notificationService';
 import type {
   GymAttendanceRecord,
@@ -192,13 +193,42 @@ export const gymService = {
     memberName?: string;
   }): Promise<void> {
     const existing = await this.getMemberMembership(params.memberId);
-    if (existing) {
-      const updated: MemberMembershipData = {
-        ...existing,
-        status: 'approved',
-        paymentStatus: 'payment_pending',
-      };
-      await AsyncStorage.setItem(MEMBER_MEMBERSHIP_KEY(params.memberId), JSON.stringify(updated));
+    const gym: GymInfo = DEFAULT_GYMS.find((g) => g.id === params.gymId) ?? (DEFAULT_GYMS[0] as GymInfo);
+
+    const updated: MemberMembershipData = {
+      memberId: params.memberId,
+      gym: existing?.gym ?? gym,
+      status: 'approved',
+      plan: existing?.plan ?? 'Basic Monthly',
+      paymentStatus: 'payment_pending',
+      totalFee: existing?.totalFee ?? gym.monthlyFee,
+      amountPaid: existing?.amountPaid ?? 0,
+      startDate: existing?.startDate ?? null,
+      expiryDate: existing?.expiryDate ?? null,
+      requestedAt: existing?.requestedAt ?? new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(MEMBER_MEMBERSHIP_KEY(params.memberId), JSON.stringify(updated));
+
+    // Also enter/admit the member into gym owner's store so they appear in members list and metrics
+    const memberName =
+      params.memberName ||
+      (params.memberId === 'member-ahmed-khan'
+        ? 'Ahmed Khan'
+        : params.memberId === 'local-demo-member'
+          ? 'Alex Morgan'
+          : 'Approved Member');
+
+    try {
+      await gymDemoService.approveOrAddMember({
+        id: params.memberId,
+        fullName: memberName,
+        email: `${params.memberId.replace(/^member-/, '')}@aurasync.fit`,
+        phone: '+1 555-0188',
+        plan: updated.plan,
+        totalFee: updated.totalFee,
+      });
+    } catch (err) {
+      console.warn('gymDemoService.approveOrAddMember error:', err);
     }
 
     if (supabase) {
@@ -229,12 +259,26 @@ export const gymService = {
     ownerUserId: string;
   }): Promise<void> {
     const existing = await this.getMemberMembership(params.memberId);
-    if (existing) {
-      const updated: MemberMembershipData = {
-        ...existing,
-        status: 'rejected',
-      };
-      await AsyncStorage.setItem(MEMBER_MEMBERSHIP_KEY(params.memberId), JSON.stringify(updated));
+    const gym: GymInfo = DEFAULT_GYMS.find((g) => g.id === params.gymId) ?? (DEFAULT_GYMS[0] as GymInfo);
+
+    const updated: MemberMembershipData = {
+      memberId: params.memberId,
+      gym: existing?.gym ?? gym,
+      status: 'rejected',
+      plan: existing?.plan ?? 'Basic Monthly',
+      paymentStatus: 'payment_pending',
+      totalFee: existing?.totalFee ?? gym.monthlyFee,
+      amountPaid: 0,
+      startDate: null,
+      expiryDate: null,
+      requestedAt: existing?.requestedAt ?? new Date().toISOString(),
+    };
+    await AsyncStorage.setItem(MEMBER_MEMBERSHIP_KEY(params.memberId), JSON.stringify(updated));
+
+    try {
+      await gymDemoService.rejectMember(params.memberId);
+    } catch (err) {
+      console.warn('gymDemoService.rejectMember error:', err);
     }
 
     if (supabase) {
@@ -247,6 +291,16 @@ export const gymService = {
         console.warn('Supabase rejectMembership error:', err);
       }
     }
+
+    // Notify member
+    await notificationService.createNotification({
+      recipientUserId: params.memberId,
+      gymId: params.gymId,
+      type: 'membership_rejected',
+      title: 'Membership Request Declined',
+      message: 'Your gym membership request was not approved by the gym owner.',
+      relatedMemberId: params.memberId,
+    });
   },
 
   async processDemoPayment(params: {

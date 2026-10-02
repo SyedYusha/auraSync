@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { buildDashboardSummary, calculateChurnInsights, hasCheckedInToday } from '@/domain/gym/churn';
 import { gymDemoService } from '@/services/gym/gymDemoService';
+import { gymService } from '@/services/gym/gymService';
 import type {
   ChurnInsight,
   GymAttendanceRecord,
@@ -35,6 +36,8 @@ interface GymOwnerContextValue {
   updateMember(memberId: string, input: MemberInput): Promise<MutationResult>;
   deactivateMember(memberId: string): Promise<MutationResult>;
   recordPayment(memberId: string, amount: number, method: PaymentMethod, note?: string): Promise<MutationResult>;
+  approveMembership(params: { memberId: string; gymId: string; ownerUserId: string; memberName?: string }): Promise<MutationResult>;
+  rejectMembership(params: { memberId: string; gymId: string; ownerUserId: string }): Promise<MutationResult>;
 }
 
 const GymOwnerContext = createContext<GymOwnerContextValue | null>(null);
@@ -155,6 +158,32 @@ export function GymOwnerProvider({ children }: PropsWithChildren) {
     [runMutation],
   );
 
+  const approveMembership = useCallback(
+    (params: { memberId: string; gymId: string; ownerUserId: string; memberName?: string }) =>
+      runMutation(
+        async () => {
+          await gymService.approveMembership(params);
+          return gymDemoService.load();
+        },
+        setIsSavingMember,
+        'The member could not be approved. Please try again.',
+      ),
+    [runMutation],
+  );
+
+  const rejectMembership = useCallback(
+    (params: { memberId: string; gymId: string; ownerUserId: string }) =>
+      runMutation(
+        async () => {
+          await gymService.rejectMembership(params);
+          return gymDemoService.load();
+        },
+        setIsSavingMember,
+        'The membership request could not be rejected. Please try again.',
+      ),
+    [runMutation],
+  );
+
   const insights = useMemo(
     () => calculateChurnInsights(members, attendance, referenceDate),
     [attendance, members, referenceDate],
@@ -187,9 +216,12 @@ export function GymOwnerProvider({ children }: PropsWithChildren) {
       updateMember,
       deactivateMember,
       recordPayment,
+      approveMembership,
+      rejectMembership,
     }),
     [
       addMember,
+      approveMembership,
       attendance,
       checkedInTodayMemberIds,
       checkingInMemberId,
@@ -204,6 +236,7 @@ export function GymOwnerProvider({ children }: PropsWithChildren) {
       payments,
       recordPayment,
       refresh,
+      rejectMembership,
       simulateCheckIn,
       status,
       updateMember,

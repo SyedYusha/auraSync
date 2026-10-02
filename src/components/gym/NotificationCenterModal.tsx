@@ -18,6 +18,7 @@ interface NotificationCenterModalProps {
 const NOTIFICATION_ICONS: Record<NotificationType, keyof typeof Ionicons.glyphMap> = {
   membership_request: 'person-add-outline',
   membership_approved: 'checkmark-circle-outline',
+  membership_rejected: 'close-circle-outline',
   payment_completed: 'card-outline',
   member_checked_in: 'enter-outline',
   member_checked_out: 'exit-outline',
@@ -28,6 +29,7 @@ const NOTIFICATION_ICONS: Record<NotificationType, keyof typeof Ionicons.glyphMa
 const NOTIFICATION_COLORS: Record<NotificationType, string> = {
   membership_request: colors.cyan,
   membership_approved: colors.success,
+  membership_rejected: colors.danger,
   payment_completed: colors.success,
   member_checked_in: colors.cyan,
   member_checked_out: colors.silver,
@@ -84,13 +86,17 @@ export function NotificationCenterModal({ visible, userId, onClose, onUpdated }:
     if (!notification.relatedMemberId) return;
     setProcessingId(notification.id);
     try {
+      const nameMatch = notification.message.match(/^([^]+?) (?:wants to join|requested to join)/);
+      const memberName = nameMatch?.[1] ? nameMatch[1].trim() : undefined;
+
       await gymService.approveMembership({
         memberId: notification.relatedMemberId,
         gymId: notification.gymId ?? 'gym-aura-fitness-club',
         ownerUserId: userId,
+        memberName,
       });
-      await notificationService.markAsRead(notification.id, userId);
-      void loadNotifications();
+      await notificationService.updateNotificationAction(notification.id, 'approved', userId);
+      await loadNotifications();
       onUpdated?.();
     } finally {
       setProcessingId(null);
@@ -106,8 +112,8 @@ export function NotificationCenterModal({ visible, userId, onClose, onUpdated }:
         gymId: notification.gymId ?? 'gym-aura-fitness-club',
         ownerUserId: userId,
       });
-      await notificationService.markAsRead(notification.id, userId);
-      void loadNotifications();
+      await notificationService.updateNotificationAction(notification.id, 'rejected', userId);
+      await loadNotifications();
       onUpdated?.();
     } finally {
       setProcessingId(null);
@@ -169,25 +175,41 @@ export function NotificationCenterModal({ visible, userId, onClose, onUpdated }:
                       </View>
                     </View>
 
-                    {/* Action buttons for membership requests */}
-                    {isRequest && item.relatedMemberId ? (
+                    {/* Action buttons or Status badge for membership requests */}
+                    {isRequest ? (
                       <View style={styles.requestActions}>
-                        <Pressable
-                          style={[styles.actionBtn, styles.approveBtn]}
-                          onPress={() => handleApprove(item)}
-                          disabled={processingId === item.id}
-                        >
-                          <Text style={styles.approveBtnText}>
-                            {processingId === item.id ? 'Processing...' : 'Approve Member'}
-                          </Text>
-                        </Pressable>
-                        <Pressable
-                          style={[styles.actionBtn, styles.rejectBtn]}
-                          onPress={() => handleReject(item)}
-                          disabled={processingId === item.id}
-                        >
-                          <Text style={styles.rejectBtnText}>Reject</Text>
-                        </Pressable>
+                        {item.actionStatus === 'approved' ? (
+                          <View style={styles.statusPillApproved}>
+                            <Ionicons name="checkmark-circle" size={14} color={colors.obsidian} />
+                            <Text style={styles.statusPillTextApproved}>Approved · Access Granted</Text>
+                          </View>
+                        ) : item.actionStatus === 'rejected' ? (
+                          <View style={styles.statusPillRejected}>
+                            <Ionicons name="close-circle" size={14} color={colors.silver} />
+                            <Text style={styles.statusPillTextRejected}>Declined</Text>
+                          </View>
+                        ) : item.relatedMemberId ? (
+                          <>
+                            <Pressable
+                              style={[styles.actionBtn, styles.approveBtn]}
+                              onPress={() => handleApprove(item)}
+                              disabled={processingId === item.id}
+                            >
+                              <Text style={styles.approveBtnText}>
+                                {processingId === item.id ? 'Approving...' : '✓ Approve Member'}
+                              </Text>
+                            </Pressable>
+                            <Pressable
+                              style={[styles.actionBtn, styles.rejectBtn]}
+                              onPress={() => handleReject(item)}
+                              disabled={processingId === item.id}
+                            >
+                              <Text style={styles.rejectBtnText}>
+                                {processingId === item.id ? '...' : '✕ Reject'}
+                              </Text>
+                            </Pressable>
+                          </>
+                        ) : null}
                       </View>
                     ) : null}
                   </View>
@@ -203,7 +225,7 @@ export function NotificationCenterModal({ visible, userId, onClose, onUpdated }:
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(3, 7, 8, 0.88)', justifyContent: 'center', alignItems: 'center', padding: spacing.md },
-  modalCard: { width: '100%', maxWidth: 520, maxHeight: '85%', gap: spacing.sm, paddingVertical: spacing.md },
+  modalCard: { width: '100%', maxWidth: 520, maxHeight: '85%', gap: spacing.sm, paddingVertical: spacing.md, overflow: 'hidden' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.line },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   title: { color: colors.white, fontSize: typography.h2, fontWeight: '700' },
@@ -229,10 +251,14 @@ const styles = StyleSheet.create({
   itemTime: { color: colors.muted, fontSize: typography.label },
   itemMessage: { color: colors.silver, fontSize: typography.caption, lineHeight: 18 },
 
-  requestActions: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs, paddingLeft: 42 },
+  requestActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs, paddingLeft: 42 },
   actionBtn: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radii.sm, alignItems: 'center', justifyContent: 'center' },
   approveBtn: { backgroundColor: colors.cyan },
   approveBtnText: { color: colors.obsidian, fontSize: typography.caption, fontWeight: '700' },
-  rejectBtn: { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+  rejectBtn: { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, borderColor: colors.line },
   rejectBtnText: { color: colors.silver, fontSize: typography.caption, fontWeight: '600' },
+  statusPillApproved: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.success, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill },
+  statusPillTextApproved: { color: colors.obsidian, fontSize: 11, fontWeight: '800' },
+  statusPillRejected: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255, 255, 255, 0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.line },
+  statusPillTextRejected: { color: colors.silver, fontSize: 11, fontWeight: '700' },
 });

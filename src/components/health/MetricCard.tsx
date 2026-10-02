@@ -48,7 +48,7 @@ export function MetricGrid({ metrics }: { readonly metrics: readonly HealthMetri
 
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  card: { width: '48.5%', minHeight: 156, justifyContent: 'space-between' },
+  card: { flexBasis: '47%', flexGrow: 1, minWidth: 135, minHeight: 156, justifyContent: 'space-between' },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconWrap: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 229, 255, 0.1)' },
   status: { fontSize: typography.label, fontWeight: '700' },

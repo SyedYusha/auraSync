@@ -343,6 +343,72 @@ export const gymDemoService = {
     return nextStore;
   },
 
+  async approveOrAddMember(params: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone?: string;
+    plan?: MembershipPlan;
+    fitnessGoal?: string;
+    totalFee?: number;
+  }): Promise<GymDemoStore> {
+    const store = await this.load();
+    const existingIndex = store.members.findIndex(
+      (m) => m.id === params.id || m.email.toLowerCase() === params.email.toLowerCase(),
+    );
+    const now = new Date();
+    const expires = new Date(now);
+    expires.setDate(expires.getDate() + 30);
+
+    if (existingIndex >= 0) {
+      const existing = store.members[existingIndex]!;
+      const updatedMember: GymMember = {
+        ...existing,
+        isActive: true,
+        membershipExpiresAt: expires.toISOString(),
+      };
+      const updatedMembers = [...store.members];
+      updatedMembers[existingIndex] = updatedMember;
+      const nextStore: GymDemoStore = {
+        ...store,
+        members: updatedMembers,
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextStore));
+      return nextStore;
+    }
+
+    const newMember: GymMember = {
+      id: params.id,
+      fullName: params.fullName,
+      email: params.email,
+      phone: params.phone ?? '+1 555-0188',
+      fitnessGoal: params.fitnessGoal ?? 'General Fitness',
+      plan: params.plan ?? 'Basic Monthly',
+      joinedAt: now.toISOString(),
+      membershipExpiresAt: expires.toISOString(),
+      totalFee: params.totalFee ?? 40,
+      amountPaid: 0,
+      notes: 'Approved via Gym Intelligence',
+      isActive: true,
+    };
+    const nextStore: GymDemoStore = {
+      ...store,
+      members: [newMember, ...store.members],
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextStore));
+    return nextStore;
+  },
+
+  async rejectMember(memberId: string): Promise<GymDemoStore> {
+    const store = await this.load();
+    const nextStore: GymDemoStore = {
+      ...store,
+      members: store.members.filter((m) => m.id !== memberId),
+    };
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nextStore));
+    return nextStore;
+  },
+
   async updateMember(memberId: string, input: MemberInput): Promise<GymDemoStore> {
     const store = await this.load();
     const existing = store.members.find((member) => member.id === memberId);

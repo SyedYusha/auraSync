@@ -18,7 +18,7 @@ import { notificationService } from '@/services/notifications/notificationServic
 import { useAuth } from '@/state/AuthProvider';
 import { useGymOwner } from '@/state/GymOwnerProvider';
 import { colors, radii, spacing, typography } from '@/theme';
-import type { ChurnInsight, GymMember, MembershipState, PaymentState } from '@/types/gym';
+import type { ChurnInsight, GymMember, GymNotification, MembershipState, PaymentState } from '@/types/gym';
 import { exportCsvFile } from '@/utils/csvExport';
 
 type MembershipFilter = MembershipState | 'all';
@@ -44,13 +44,26 @@ export default function GymMembersScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 768;
   const { user } = useAuth();
-  const { status, members, insights, checkedInTodayMemberIds, checkingInMemberId, error, refresh, simulateCheckIn } = useGymOwner();
+  const {
+    status,
+    members,
+    insights,
+    checkedInTodayMemberIds,
+    checkingInMemberId,
+    error,
+    refresh,
+    simulateCheckIn,
+    approveMembership,
+    rejectMembership,
+  } = useGymOwner();
   const [query, setQuery] = useState('');
   const [membershipFilter, setMembershipFilter] = useState<MembershipFilter>('all');
   const [paymentFilter, setPaymentFilter] = useState<PaymentFilter>('all');
   const [isExporting, setIsExporting] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState<readonly GymNotification[]>([]);
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
 
   const ownerUserId = user?.id ?? 'local-demo-gym-owner';
 
@@ -61,18 +74,73 @@ export default function GymMembersScreen() {
     } catch {}
   }, [ownerUserId]);
 
+  const loadPendingRequests = useCallback(async () => {
+    try {
+      const all = await notificationService.getNotifications(ownerUserId);
+      const pending = all.filter(
+        (n) =>
+          n.type === 'membership_request' &&
+          n.actionStatus !== 'approved' &&
+          n.actionStatus !== 'rejected' &&
+          Boolean(n.relatedMemberId),
+      );
+      setPendingRequests(pending);
+    } catch {}
+  }, [ownerUserId]);
+
   useEffect(() => {
     let active = true;
     notificationService
-      .getUnreadCount(ownerUserId)
-      .then((count) => {
-        if (active) setUnreadNotifs(count);
+      .seedDefaultNotificationsIfEmpty(ownerUserId, 'gym_owner')
+      .then(() => {
+        if (!active) return;
+        void checkUnread();
+        void loadPendingRequests();
       })
       .catch(() => {});
     return () => {
       active = false;
     };
-  }, [ownerUserId]);
+  }, [checkUnread, loadPendingRequests, ownerUserId]);
+
+  const handleApproveRequest = async (notif: GymNotification) => {
+    if (!notif.relatedMemberId) return;
+    setProcessingRequestId(notif.id);
+    try {
+      const nameMatch = notif.message.match(/^([^]+?) (?:wants to join|requested to join)/);
+      const memberName = nameMatch?.[1] ? nameMatch[1].trim() : undefined;
+      await approveMembership({
+        memberId: notif.relatedMemberId,
+        gymId: notif.gymId ?? 'gym-aura-fitness-club',
+        ownerUserId,
+        memberName,
+      });
+      await notificationService.updateNotificationAction(notif.id, 'approved', ownerUserId);
+      await loadPendingRequests();
+      await checkUnread();
+      await refresh();
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
+
+  const handleRejectRequest = async (notif: GymNotification) => {
+    if (!notif.relatedMemberId) return;
+    setProcessingRequestId(notif.id);
+    try {
+      await rejectMembership({
+        memberId: notif.relatedMemberId,
+        gymId: notif.gymId ?? 'gym-aura-fitness-club',
+        ownerUserId,
+      });
+      await notificationService.updateNotificationAction(notif.id, 'rejected', ownerUserId);
+      await loadPendingRequests();
+      await checkUnread();
+      await refresh();
+    } finally {
+      setProcessingRequestId(null);
+    }
+  };
 
   const insightsByMemberId = useMemo(() => new Map(insights.map((insight) => [insight.memberId, insight])), [insights]);
 
@@ -124,7 +192,7 @@ export default function GymMembersScreen() {
   }
 
   return (
-    <Screen onRefresh={() => { void refresh(); void checkUnread(); }} contentStyle={styles.content}>
+    <Screen onRefresh={() => { void refresh(); void checkUnread(); void loadPendingRequests(); }} contentStyle={styles.content}>
       <FadeIn>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => router.replace('/owner' as never)}>
@@ -202,6 +270,61 @@ export default function GymMembersScreen() {
           <Text style={styles.addButtonLabel}>Add member</Text>
         </Pressable>
       </FadeIn>
+
+      {/* Pending Membership Requests Queue */}
+      {pendingRequests.length > 0 ? (
+        <FadeIn delay={60}>
+          <GlassCard style={styles.pendingSectionCard}>
+            <View style={styles.pendingSectionHeader}>
+              <View style={styles.pendingTitleGroup}>
+                <Ionicons name="person-add" size={18} color={colors.warning} />
+                <Text style={styles.pendingSectionTitle}>
+                  Pending Membership Requests ({pendingRequests.length})
+                </Text>
+              </View>
+              <StatusBadge label="ACTION REQUIRED" tone="muted" />
+            </View>
+            <Text style={styles.pendingSectionSubtitle}>
+              New member applications waiting for gym owner approval. Approve to admit into the gym:
+            </Text>
+
+            {pendingRequests.map((req) => (
+              <View key={req.id} style={styles.pendingRow}>
+                <View style={styles.pendingMemberInfo}>
+                  <View style={styles.avatarMiniWarning}>
+                    <Ionicons name="person" size={14} color={colors.warning} />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={styles.pendingMemberName}>{req.title}</Text>
+                    <Text style={styles.pendingMemberMsg}>{req.message}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.pendingActions}>
+                  <Pressable
+                    style={[styles.pendingActionBtn, styles.pendingApproveBtn]}
+                    onPress={() => void handleApproveRequest(req)}
+                    disabled={processingRequestId === req.id}
+                  >
+                    <Text style={styles.pendingApproveText}>
+                      {processingRequestId === req.id ? 'Approving...' : '✓ Approve & Admit'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.pendingActionBtn, styles.pendingRejectBtn]}
+                    onPress={() => void handleRejectRequest(req)}
+                    disabled={processingRequestId === req.id}
+                  >
+                    <Text style={styles.pendingRejectText}>
+                      {processingRequestId === req.id ? '...' : '✕ Reject'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ))}
+          </GlassCard>
+        </FadeIn>
+      ) : null}
 
       {visibleMembers.length === 0 ? (
         <GlassCard>
@@ -314,6 +437,7 @@ export default function GymMembersScreen() {
         onClose={() => setIsNotifOpen(false)}
         onUpdated={() => {
           void checkUnread();
+          void loadPendingRequests();
           void refresh();
         }}
       />
@@ -469,4 +593,36 @@ const styles = StyleSheet.create({
   actionBtnSmallText: { color: colors.cyan, fontSize: typography.caption, fontWeight: '700' },
   actionBtnDone: { backgroundColor: 'rgba(255, 255, 255, 0.05)', borderColor: colors.line },
   actionBtnDoneText: { color: colors.muted },
+
+  // Pending Requests Queue
+  pendingSectionCard: {
+    backgroundColor: 'rgba(255, 179, 0, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 179, 0, 0.35)',
+    borderRadius: radii.md,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  pendingSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs },
+  pendingTitleGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1 },
+  pendingSectionTitle: { color: colors.white, fontSize: typography.body, fontWeight: '800' },
+  pendingSectionSubtitle: { color: colors.silver, fontSize: typography.caption, lineHeight: 18 },
+  pendingRow: {
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: radii.sm,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  pendingMemberInfo: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  avatarMiniWarning: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255, 179, 0, 0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.warning },
+  pendingMemberName: { color: colors.white, fontSize: typography.body, fontWeight: '700' },
+  pendingMemberMsg: { color: colors.silver, fontSize: typography.caption },
+  pendingActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: 4, paddingLeft: 38 },
+  pendingActionBtn: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radii.sm, alignItems: 'center', justifyContent: 'center' },
+  pendingApproveBtn: { backgroundColor: colors.cyan },
+  pendingApproveText: { color: colors.obsidian, fontSize: typography.caption, fontWeight: '800' },
+  pendingRejectBtn: { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1, borderColor: colors.line },
+  pendingRejectText: { color: colors.silver, fontSize: typography.caption, fontWeight: '700' },
 });

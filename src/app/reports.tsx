@@ -1,7 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { ErrorState, LoadingState, OutlineButton, PrimaryButton, StatusBadge } from '@/components/ui/Feedback';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -503,42 +503,46 @@ export default function ReportsScreen() {
         <Text style={styles.sectionTitle}>SECTION 2 — HEALTH &amp; FITNESS SNAPSHOT</Text>
       </View>
       <GlassCard padding={0} style={styles.tableCard}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.th, { flex: 2 }]}>METRIC</Text>
-          <Text style={[styles.th, { flex: 1 }]}>CURRENT</Text>
-          <Text style={[styles.th, { flex: 1 }]}>CHANGE</Text>
-          <Text style={[styles.th, { flex: 1, textAlign: 'right' }]}>STATUS</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>Heart Rate</Text>
-          <Text style={[styles.valCol, { flex: 1 }]}>{hasHealthData ? '62 BPM' : '—'}</Text>
-          <Text style={[styles.subCol, { flex: 1 }]}>{hasHealthData ? '-2 BPM' : 'Not enough data'}</Text>
-          <Text style={[styles.subCol, { flex: 1, textAlign: 'right' }]}>{hasHealthData ? 'Optimal' : '—'}</Text>
-        </View>
-        <View style={[styles.row, styles.borderTop]}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>HRV</Text>
-          <Text style={[styles.valCol, { flex: 1 }]}>{hasHealthData ? '64 ms' : '—'}</Text>
-          <Text style={[styles.subCol, { flex: 1 }]}>{hasHealthData ? '+3 ms' : 'Not enough data'}</Text>
-          <Text style={[styles.subCol, { flex: 1, textAlign: 'right' }]}>{hasHealthData ? 'Good' : '—'}</Text>
-        </View>
-        <View style={[styles.row, styles.borderTop]}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>Sleep</Text>
-          <Text style={[styles.valCol, { flex: 1 }]}>{hasHealthData ? '7.4 h' : '—'}</Text>
-          <Text style={[styles.subCol, { flex: 1 }]}>{hasHealthData ? '+0.3 h' : 'Not enough data'}</Text>
-          <Text style={[styles.subCol, { flex: 1, textAlign: 'right' }]}>{hasHealthData ? 'Optimal' : '—'}</Text>
-        </View>
-        <View style={[styles.row, styles.borderTop]}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>Stress</Text>
-          <Text style={[styles.valCol, { flex: 1 }]}>{hasHealthData ? '32/100' : '—'}</Text>
-          <Text style={[styles.subCol, { flex: 1 }]}>{hasHealthData ? '-4' : 'Not enough data'}</Text>
-          <Text style={[styles.subCol, { flex: 1, textAlign: 'right' }]}>{hasHealthData ? 'Low' : '—'}</Text>
-        </View>
-        <View style={[styles.row, styles.borderTop]}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>Training Load</Text>
-          <Text style={[styles.valCol, { flex: 1 }]}>{hasHealthData ? '48/100' : '0'}</Text>
-          <Text style={[styles.subCol, { flex: 1 }]}>{hasHealthData ? '+6' : 'No activity yet'}</Text>
-          <Text style={[styles.subCol, { flex: 1, textAlign: 'right' }]}>{hasHealthData ? 'Moderate' : '—'}</Text>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScrollContent}>
+          <View style={styles.tableInner}>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, { flex: 2, minWidth: 100 }]}>METRIC</Text>
+              <Text style={[styles.th, { flex: 1, minWidth: 80 }]}>CURRENT</Text>
+              <Text style={[styles.th, { flex: 1, minWidth: 90 }]}>CHANGE</Text>
+              <Text style={[styles.th, { flex: 1, minWidth: 80, textAlign: 'right' }]}>STATUS</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 100 }]}>Heart Rate</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 80 }]}>{hasHealthData ? '62 BPM' : '—'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 90 }]}>{hasHealthData ? '-2 BPM' : 'Not enough data'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 80, textAlign: 'right' }]}>{hasHealthData ? 'Optimal' : '—'}</Text>
+            </View>
+            <View style={[styles.row, styles.borderTop]}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 100 }]}>HRV</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 80 }]}>{hasHealthData ? '64 ms' : '—'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 90 }]}>{hasHealthData ? '+3 ms' : 'Not enough data'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 80, textAlign: 'right' }]}>{hasHealthData ? 'Good' : '—'}</Text>
+            </View>
+            <View style={[styles.row, styles.borderTop]}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 100 }]}>Sleep</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 80 }]}>{hasHealthData ? '7.4 h' : '—'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 90 }]}>{hasHealthData ? '+0.3 h' : 'Not enough data'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 80, textAlign: 'right' }]}>{hasHealthData ? 'Optimal' : '—'}</Text>
+            </View>
+            <View style={[styles.row, styles.borderTop]}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 100 }]}>Stress</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 80 }]}>{hasHealthData ? '32/100' : '—'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 90 }]}>{hasHealthData ? '-4' : 'Not enough data'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 80, textAlign: 'right' }]}>{hasHealthData ? 'Low' : '—'}</Text>
+            </View>
+            <View style={[styles.row, styles.borderTop]}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 100 }]}>Training Load</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 80 }]}>{hasHealthData ? '48/100' : '0'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 90 }]}>{hasHealthData ? '+6' : 'No activity yet'}</Text>
+              <Text style={[styles.subCol, { flex: 1, minWidth: 80, textAlign: 'right' }]}>{hasHealthData ? 'Moderate' : '—'}</Text>
+            </View>
+          </View>
+        </ScrollView>
       </GlassCard>
 
       {/* SECTION 3 — RECOVERY */}
@@ -571,28 +575,32 @@ export default function ReportsScreen() {
         <Text style={styles.sectionTitle}>SECTION 4 — WORKOUT SUMMARY</Text>
       </View>
       <GlassCard padding={0} style={styles.tableCard}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.th, { flex: 1.5 }]}>DATE</Text>
-          <Text style={[styles.th, { flex: 2 }]}>WORKOUT</Text>
-          <Text style={[styles.th, { flex: 1 }]}>SETS</Text>
-          <Text style={[styles.th, { flex: 1.5, textAlign: 'right' }]}>VOLUME</Text>
-        </View>
-        {periodWorkouts.length === 0 ? (
-          <View style={styles.emptyRow}>
-            <Text style={styles.emptyText}>No completed workouts in this period.</Text>
-          </View>
-        ) : (
-          periodWorkouts.slice(0, 5).map((w, idx) => (
-            <View key={w.id} style={[styles.row, idx > 0 && styles.borderTop]}>
-              <Text style={[styles.subCol, { flex: 1.5 }]}>{new Date(w.date).toLocaleDateString()}</Text>
-              <Text style={[styles.valCol, { flex: 2 }]}>{w.type}</Text>
-              <Text style={[styles.subCol, { flex: 1 }]}>{w.exercises.reduce((s, e) => s + e.sets, 0)}</Text>
-              <Text style={[styles.valCol, { flex: 1.5, textAlign: 'right' }]}>
-                {w.totalVolume != null ? `${w.totalVolume.toLocaleString()} kg` : 'Volume unavailable'}
-              </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScrollContent}>
+          <View style={styles.tableInner}>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, { flex: 1.5, minWidth: 90 }]}>DATE</Text>
+              <Text style={[styles.th, { flex: 2, minWidth: 100 }]}>WORKOUT</Text>
+              <Text style={[styles.th, { flex: 1, minWidth: 60 }]}>SETS</Text>
+              <Text style={[styles.th, { flex: 1.5, minWidth: 100, textAlign: 'right' }]}>VOLUME</Text>
             </View>
-          ))
-        )}
+            {periodWorkouts.length === 0 ? (
+              <View style={styles.emptyRow}>
+                <Text style={styles.emptyText}>No completed workouts in this period.</Text>
+              </View>
+            ) : (
+              periodWorkouts.slice(0, 5).map((w, idx) => (
+                <View key={w.id} style={[styles.row, idx > 0 && styles.borderTop]}>
+                  <Text style={[styles.subCol, { flex: 1.5, minWidth: 90 }]}>{new Date(w.date).toLocaleDateString()}</Text>
+                  <Text style={[styles.valCol, { flex: 2, minWidth: 100 }]}>{w.type}</Text>
+                  <Text style={[styles.subCol, { flex: 1, minWidth: 60 }]}>{w.exercises.reduce((s, e) => s + e.sets, 0)}</Text>
+                  <Text style={[styles.valCol, { flex: 1.5, minWidth: 100, textAlign: 'right' }]}>
+                    {w.totalVolume != null ? `${w.totalVolume.toLocaleString()} kg` : 'Volume unavailable'}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+        </ScrollView>
       </GlassCard>
 
       {/* SECTION 5 — WORKOUT PROGRESS */}
@@ -600,30 +608,34 @@ export default function ReportsScreen() {
         <Text style={styles.sectionTitle}>SECTION 5 — WORKOUT PROGRESS</Text>
       </View>
       <GlassCard padding={0} style={styles.tableCard}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.th, { flex: 2 }]}>EXERCISE</Text>
-          <Text style={[styles.th, { flex: 1.5 }]}>PREVIOUS</Text>
-          <Text style={[styles.th, { flex: 1.5 }]}>CURRENT</Text>
-          <Text style={[styles.th, { flex: 1, textAlign: 'right' }]}>CHANGE</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>Barbell Bench Press</Text>
-          <Text style={[styles.subCol, { flex: 1.5 }]}>40 kg × 10</Text>
-          <Text style={[styles.valCol, { flex: 1.5 }]}>50 kg × 8</Text>
-          <Text style={[styles.valCol, { flex: 1, textAlign: 'right', color: colors.cyan }]}>+10 kg</Text>
-        </View>
-        <View style={[styles.row, styles.borderTop]}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>Back Squat</Text>
-          <Text style={[styles.subCol, { flex: 1.5 }]}>50 kg × 10</Text>
-          <Text style={[styles.valCol, { flex: 1.5 }]}>60 kg × 8</Text>
-          <Text style={[styles.valCol, { flex: 1, textAlign: 'right', color: colors.cyan }]}>+10 kg</Text>
-        </View>
-        <View style={[styles.row, styles.borderTop]}>
-          <Text style={[styles.labelCol, { flex: 2 }]}>Romanian Deadlift</Text>
-          <Text style={[styles.subCol, { flex: 1.5 }]}>60 kg × 8</Text>
-          <Text style={[styles.valCol, { flex: 1.5 }]}>70 kg × 8</Text>
-          <Text style={[styles.valCol, { flex: 1, textAlign: 'right', color: colors.cyan }]}>+10 kg</Text>
-        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScrollContent}>
+          <View style={styles.tableInner}>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, { flex: 2, minWidth: 130 }]}>EXERCISE</Text>
+              <Text style={[styles.th, { flex: 1.5, minWidth: 80 }]}>PREVIOUS</Text>
+              <Text style={[styles.th, { flex: 1.5, minWidth: 80 }]}>CURRENT</Text>
+              <Text style={[styles.th, { flex: 1, minWidth: 70, textAlign: 'right' }]}>CHANGE</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 130 }]}>Barbell Bench Press</Text>
+              <Text style={[styles.subCol, { flex: 1.5, minWidth: 80 }]}>40 kg × 10</Text>
+              <Text style={[styles.valCol, { flex: 1.5, minWidth: 80 }]}>50 kg × 8</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 70, textAlign: 'right', color: colors.cyan }]}>+10 kg</Text>
+            </View>
+            <View style={[styles.row, styles.borderTop]}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 130 }]}>Back Squat</Text>
+              <Text style={[styles.subCol, { flex: 1.5, minWidth: 80 }]}>50 kg × 10</Text>
+              <Text style={[styles.valCol, { flex: 1.5, minWidth: 80 }]}>60 kg × 8</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 70, textAlign: 'right', color: colors.cyan }]}>+10 kg</Text>
+            </View>
+            <View style={[styles.row, styles.borderTop]}>
+              <Text style={[styles.labelCol, { flex: 2, minWidth: 130 }]}>Romanian Deadlift</Text>
+              <Text style={[styles.subCol, { flex: 1.5, minWidth: 80 }]}>60 kg × 8</Text>
+              <Text style={[styles.valCol, { flex: 1.5, minWidth: 80 }]}>70 kg × 8</Text>
+              <Text style={[styles.valCol, { flex: 1, minWidth: 70, textAlign: 'right', color: colors.cyan }]}>+10 kg</Text>
+            </View>
+          </View>
+        </ScrollView>
       </GlassCard>
 
       {/* SECTION 6 — ATTENDANCE */}
@@ -631,31 +643,35 @@ export default function ReportsScreen() {
         <Text style={styles.sectionTitle}>SECTION 6 — ATTENDANCE</Text>
       </View>
       <GlassCard padding={0} style={styles.tableCard}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.th, { flex: 1.5 }]}>DATE</Text>
-          <Text style={[styles.th, { flex: 1.5 }]}>CHECK IN</Text>
-          <Text style={[styles.th, { flex: 1.5 }]}>CHECK OUT</Text>
-          <Text style={[styles.th, { flex: 1, textAlign: 'right' }]}>DURATION</Text>
-        </View>
-        {attendance.length > 0 ? (
-          attendance.slice(0, 4).map((att, idx) => (
-            <View key={att.id} style={[styles.row, idx > 0 && styles.borderTop]}>
-              <Text style={[styles.subCol, { flex: 1.5 }]}>{att.checkedInAt.split('—')[0]?.trim() ?? 'Today'}</Text>
-              <Text style={[styles.valCol, { flex: 1.5 }]}>{att.checkedInAt.split('—')[1]?.trim() ?? att.checkedInAt}</Text>
-              <Text style={[styles.subCol, { flex: 1.5 }]}>{att.checkOutAt ? att.checkOutAt.split('—')[1]?.trim() : 'In Progress'}</Text>
-              <Text style={[styles.valCol, { flex: 1, textAlign: 'right', color: colors.cyan }]}>
-                {att.durationMinutes ? `${Math.floor(att.durationMinutes / 60)}h ${att.durationMinutes % 60}m` : 'Active'}
-              </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScrollContent}>
+          <View style={styles.tableInner}>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.th, { flex: 1.5, minWidth: 85 }]}>DATE</Text>
+              <Text style={[styles.th, { flex: 1.5, minWidth: 80 }]}>CHECK IN</Text>
+              <Text style={[styles.th, { flex: 1.5, minWidth: 80 }]}>CHECK OUT</Text>
+              <Text style={[styles.th, { flex: 1, minWidth: 75, textAlign: 'right' }]}>DURATION</Text>
             </View>
-          ))
-        ) : (
-          <View style={styles.row}>
-            <Text style={[styles.subCol, { flex: 1.5 }]}>02 Oct 2026</Text>
-            <Text style={[styles.valCol, { flex: 1.5 }]}>07:42 PM</Text>
-            <Text style={[styles.subCol, { flex: 1.5 }]}>09:05 PM</Text>
-            <Text style={[styles.valCol, { flex: 1, textAlign: 'right', color: colors.cyan }]}>1h 23m</Text>
+            {attendance.length > 0 ? (
+              attendance.slice(0, 4).map((att, idx) => (
+                <View key={att.id} style={[styles.row, idx > 0 && styles.borderTop]}>
+                  <Text style={[styles.subCol, { flex: 1.5, minWidth: 85 }]}>{att.checkedInAt.split('—')[0]?.trim() ?? 'Today'}</Text>
+                  <Text style={[styles.valCol, { flex: 1.5, minWidth: 80 }]}>{att.checkedInAt.split('—')[1]?.trim() ?? att.checkedInAt}</Text>
+                  <Text style={[styles.subCol, { flex: 1.5, minWidth: 80 }]}>{att.checkOutAt ? att.checkOutAt.split('—')[1]?.trim() : 'In Progress'}</Text>
+                  <Text style={[styles.valCol, { flex: 1, minWidth: 75, textAlign: 'right', color: colors.cyan }]}>
+                    {att.durationMinutes ? `${Math.floor(att.durationMinutes / 60)}h ${att.durationMinutes % 60}m` : 'Active'}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.row}>
+                <Text style={[styles.subCol, { flex: 1.5, minWidth: 85 }]}>02 Oct 2026</Text>
+                <Text style={[styles.valCol, { flex: 1.5, minWidth: 80 }]}>07:42 PM</Text>
+                <Text style={[styles.subCol, { flex: 1.5, minWidth: 80 }]}>09:05 PM</Text>
+                <Text style={[styles.valCol, { flex: 1, minWidth: 75, textAlign: 'right', color: colors.cyan }]}>1h 23m</Text>
+              </View>
+            )}
           </View>
-        )}
+        </ScrollView>
       </GlassCard>
 
       {/* SECTION 7 — MEMBERSHIP */}
@@ -741,6 +757,8 @@ const styles = StyleSheet.create({
   description: { color: colors.muted, fontSize: typography.caption, lineHeight: 18 },
 
   tableCard: { overflow: 'hidden' },
+  tableScrollContent: { minWidth: '100%' },
+  tableInner: { minWidth: 360 },
   tableHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.line, backgroundColor: 'rgba(255, 255, 255, 0.03)' },
   th: { color: colors.muted, fontSize: typography.label, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: 10 },

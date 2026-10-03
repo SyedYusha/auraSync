@@ -16,9 +16,11 @@ export interface AIRequest {
 
 export interface AIResponse {
   readonly success: boolean;
+  readonly reply?: string;
   readonly recommendation?: AIRecommendation;
   readonly error?: string;
   readonly fallback: boolean;
+  readonly provider?: string;
 }
 
 export interface HealthContext {

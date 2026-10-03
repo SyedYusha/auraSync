@@ -71,9 +71,11 @@ interface AIRecommendation {
 
 interface CoachResponse {
   success: boolean;
+  reply?: string;
   recommendation?: AIRecommendation;
   error?: string;
   fallback: boolean;
+  provider?: string;
 }
 
 function parseAIResponse(raw: string): AIRecommendation | null {
@@ -723,13 +725,14 @@ app.post('/api/ai/coach', async (req, res) => {
     });
 
     const recommendation = parseAIResponse(result.content);
-    if (!recommendation) {
-      throw new Error(`AI response from ${result.provider} could not be parsed as the required JSON schema.`);
-    }
+    const reply = recommendation
+      ? `${recommendation.title}\n\n${recommendation.recommendation}\n\nWhy: ${recommendation.reason}\n\nIntensity: ${recommendation.intensity} | Duration: ${recommendation.duration}\nFocus: ${recommendation.focus}\n\nRecovery tip: ${recommendation.recoveryTip}`
+      : result.content.trim();
 
     res.json({
       success: true,
-      recommendation,
+      reply,
+      recommendation: recommendation ?? undefined,
       fallback: false,
       provider: result.provider,
     });

@@ -90,11 +90,14 @@ export default async function handler(req: any, res: any) {
     });
 
     const recommendation = parseAIResponse(result.content);
-    if (!recommendation) throw new Error('AI response did not match the AuraSync+ Coach schema.');
+    const reply = recommendation
+      ? `${recommendation.title}\n\n${recommendation.recommendation}\n\nWhy: ${recommendation.reason}\n\nIntensity: ${recommendation.intensity} | Duration: ${recommendation.duration}\nFocus: ${recommendation.focus}\n\nRecovery tip: ${recommendation.recoveryTip}`
+      : result.content.trim();
 
     res.status(200).json({
       success: true,
-      recommendation,
+      reply,
+      recommendation: recommendation ?? undefined,
       fallback: false,
       provider: result.provider,
     });

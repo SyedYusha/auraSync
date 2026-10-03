@@ -35,7 +35,7 @@ function providerConfigs(): ProviderConfig[] {
       id: 'gemini',
       apiKey: process.env.GEMINI_API_KEY ?? '',
       baseUrl: process.env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai',
-      model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
     },
     {
       id: 'deepseek',
@@ -45,7 +45,7 @@ function providerConfigs(): ProviderConfig[] {
     },
   ];
 
-  const order = (process.env.AI_PROVIDER_ORDER || 'openai,gemini,deepseek')
+  const order = (process.env.AI_PROVIDER_ORDER || 'gemini,openai,deepseek')
     .split(',')
     .map((value: string) => value.trim().toLowerCase())
     .filter((value: string): value is AIProvider => value === 'openai' || value === 'gemini' || value === 'deepseek');
